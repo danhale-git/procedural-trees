@@ -157,6 +157,158 @@ public struct TreeWorleyNoise
 		return cell;
 	}
 
+	public CellData GetWorleyData(float x, float z, float frequency, out CellData adjacent, out float distance2Edge, bool getAdjacent = false)
+	{
+		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref z);
+
+		x *= frequency;
+		z *= frequency;
+
+		int xr = FastRound(x);
+		int yr = FastRound(z);
+
+		float distance0 = 999999;
+		float distance1 = 999999;
+
+		//	Store distance1 index
+		int xc1 = 0, yc1 = 0;
+
+		//	Store distance0 index in case it is assigned to distance1 later
+		int xc0 = 0, yc0 = 0;
+
+		//	All adjacent cell indices and distances
+		NineInts otherX = new NineInts();
+		NineInts otherY = new NineInts();
+
+		NineFloats otherCellX = new NineFloats();
+		NineFloats otherCellY = new NineFloats();
+
+		NineFloats otherDistance = new NineFloats();
+		for(int i = 0; i < 9; i++)
+		{
+			otherDistance[i] = 999999;
+		}
+
+		int indexCount = 0;
+
+		float3 currentCellPosition = float3.zero;
+		int2 currentCellIndex = int2.zero;
+
+		float distance = 999999;
+
+		for (int xi = xr - 1; xi <= xr + 1; xi++)
+				{
+					for (int yi = yr - 1; yi <= yr + 1; yi++)
+					{
+						float2 vec = cell_2D[Hash2D(seed, xi, yi) & 255];
+
+						float vecX = xi - x + vec.x * cellularJitter;
+						float vecY = yi - z + vec.y * cellularJitter;
+
+						float cellX = xi + vec.x * cellularJitter;
+						float cellY = yi + vec.y * cellularJitter;
+
+						float newDistance;
+
+						switch(distanceFunction)
+						{
+							case DistanceFunction.Natural:
+								newDistance = (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
+								break;
+							case DistanceFunction.Manhatten:
+								newDistance = math.abs(vecX) + math.abs(vecY);
+								break;
+							case DistanceFunction.Euclidean:
+								newDistance = newDistance = vecX * vecX + vecY * vecY;
+								break;
+							default:
+								newDistance = 0;
+								throw new System.Exception("Unrecognised cellular distance function");
+						}
+						
+						if(newDistance < distance)
+						{
+							distance = newDistance;
+						}
+
+						if(newDistance <= distance1)
+						{
+							if(newDistance >= distance0)
+							{
+								distance1 = newDistance;
+								xc1 = xi;
+								yc1 = yi;
+							}
+							else
+							{
+								distance1 = distance0;
+								xc1 = xc0;
+								yc1 = yc0;
+							}
+						}
+
+						if(newDistance <= distance0)
+						{
+							distance0 = newDistance;
+							xc0 = xi;
+							yc0 = yi;
+
+							currentCellPosition = new float3(cellX, 0, cellY) / frequency;
+							currentCellIndex = new int2(xi, yi);
+						}
+
+						if(getAdjacent)
+						{
+							//	Store all adjacent cells
+							otherCellX[indexCount] = cellX;
+							otherCellY[indexCount] = cellY;
+							otherX[indexCount] = xi;
+							otherY[indexCount] = yi;
+							otherDistance[indexCount] = newDistance;
+							indexCount++;
+						}
+					}
+				}
+
+		float currentCellValue = To01(ValCoord2D(seed, xc0, yc0));
+
+		CellData cell = new CellData();
+
+        cell.index = currentCellIndex;
+        cell.position = currentCellPosition;
+		cell.value =  currentCellValue;
+
+		distance2Edge = 999999;
+		adjacent = new CellData();
+		
+		if(getAdjacent)
+		{
+			float adjacentCellValue = 0;
+			int2 adjacentCellIndex = int2.zero;
+			float3 adjacentCellPosition = float3.zero;
+
+			for(int i = 0; i < 9; i++)
+			{	
+				float dist2Edge = ApplyDistanceType(distance0, otherDistance[i]);
+				if(dist2Edge < distance2Edge)
+				{
+					int2 otherCellIndex = new int2(otherX[i], otherY[i]);
+					distance2Edge = dist2Edge;
+					adjacentCellValue = To01(ValCoord2D(seed, otherX[i], otherY[i]));
+					adjacentCellIndex = otherCellIndex;
+					adjacentCellPosition = new float3(otherCellX[i], 0, otherCellY[i]) / frequency;
+				}
+			}
+			if(distance2Edge == 999999) distance2Edge = 0;
+			
+			adjacent.value = adjacentCellValue;
+			adjacent.position = adjacentCellPosition;
+			adjacent.index = adjacentCellIndex;
+		}
+
+		return cell;
+	}
+
     public PointData GetPointDataFromPosition(float x, float z, float frequency)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref z);
