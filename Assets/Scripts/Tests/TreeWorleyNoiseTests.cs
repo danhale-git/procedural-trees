@@ -14,7 +14,79 @@ namespace Tests
             uint randomSeed = (uint)UnityEngine.Random.Range(0, 10000);
             return new Unity.Mathematics.Random(randomSeed);
         }
-        
+
+        [Test]
+        public void GetWorleyNoiseNoAdjacent()
+        {
+            TreeWorleyNoise.CellData adjacentPlaceholder;
+            float dist2EdgePlaceholder;
+
+            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+
+            bool somethingWasGenerated = cell.value != 0;
+            bool adjacentNotGenerated = adjacentPlaceholder.value == 0;
+
+            Assert.IsTrue(somethingWasGenerated && adjacentNotGenerated);
+        }
+
+        [Test]
+        public void GetWorleyNoiseNoDistance()
+        {
+            TreeWorleyNoise.CellData adjacentPlaceholder;
+            float dist2EdgePlaceholder;
+
+            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+
+            bool somethingWasGenerated = cell.value != 0;
+            bool distanceNotGenerated = dist2EdgePlaceholder == 999999;
+
+            Assert.IsTrue(somethingWasGenerated && distanceNotGenerated);
+        }
+
+        [Test]
+        public void GetWorleyDistanceNotZero()
+        {
+            TreeWorleyNoise.CellData adjacentPlaceholder;
+            float dist2Edge;
+
+            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
+
+            bool somethingWasGenerated = cell.value != 0;
+            bool distanceNotZero = dist2Edge != 0;
+
+            Assert.IsTrue(somethingWasGenerated && distanceNotZero);
+        }
+
+        [Test]
+        public void GetWorleyDistanceNotNines()
+        {
+            TreeWorleyNoise.CellData adjacentPlaceholder;
+            float dist2Edge;
+
+            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
+
+            bool somethingWasGenerated = cell.value != 0;
+            bool distanceNotNines = dist2Edge != 999999;
+
+            Assert.IsTrue(somethingWasGenerated && distanceNotNines);
+        }
+
+        TreeWorleyNoise.CellData GetWorleyDataHelper(out TreeWorleyNoise.CellData adjacentPlaceholder, out float dist2EdgePlaceholder, bool getAdjacent, bool getDistance)
+        {
+            TreeWorleyNoise worley = GetWorleyGenerator();
+            float3 randomPosition = Random().NextFloat3();
+
+            return worley.GetWorleyData(
+                randomPosition.x,
+                randomPosition.y,
+                0.01f,
+                out adjacentPlaceholder,
+                out dist2EdgePlaceholder,
+                getAdjacent,
+                getDistance
+            );
+        }
+
         [Test]
         public void RandomNotZero()
         {
@@ -27,9 +99,7 @@ namespace Tests
         public void IndexesMatch()
         {
             WorleyDatas datas = GetWorleyDatas();
-            bool match =    datas.cellFromIndex.index.Equals(datas.cellFromPosition.index) &&
-                            datas.cellFromIndex.index.Equals(datas.pointFromPosition.currentCellIndex
-                        );
+            bool match = datas.cellFromIndex.index.Equals(datas.cellFromPosition.index);
             Assert.IsTrue(match);
         }
 
@@ -37,24 +107,20 @@ namespace Tests
         public void PositionsMatch()
         {
             WorleyDatas datas = GetWorleyDatas();
-            bool match =    datas.cellFromIndex.position.Equals(datas.cellFromPosition.position) &&
-                            datas.cellFromIndex.position.Equals(datas.pointFromPosition.currentCellPosition
-                        );
+            bool match = datas.cellFromIndex.position.Equals(datas.cellFromPosition.position);
             Assert.IsTrue(match);
         }
         [Test]
         public void ValuesMatch()
         {
             WorleyDatas datas = GetWorleyDatas();
-            bool match =    datas.cellFromIndex.value.Equals(datas.cellFromPosition.value) &&
-                            datas.cellFromIndex.value.Equals(datas.pointFromPosition.currentCellValue
-                        );
+            bool match = datas.cellFromIndex.value.Equals(datas.cellFromPosition.value);
             Assert.IsTrue(match);
         }
 
-        WorleyDatas GetWorleyDatas()
+        TreeWorleyNoise GetWorleyGenerator()
         {
-            TreeWorleyNoise worley = new TreeWorleyNoise()
+            return new TreeWorleyNoise()
             {
                 seed = Random().NextInt(),
                 perterbAmp = 0,
@@ -62,29 +128,30 @@ namespace Tests
                 distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
                 cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
             };
+        }
+
+        WorleyDatas GetWorleyDatas()
+        {
+            TreeWorleyNoise worley = GetWorleyGenerator();
             float frequency = 0.01f;
 
             float3 randomPosition = Random().NextFloat3();
 
-            TreeWorleyNoise.PointData pointFromPosition;
             TreeWorleyNoise.CellData cellFromIndex;
             TreeWorleyNoise.CellData cellFromPosition;
 
-            pointFromPosition = worley.GetPointDataFromPosition(randomPosition.x, randomPosition.z, frequency);
-            cellFromIndex = worley.GetCellDataFromIndex(pointFromPosition.currentCellIndex, frequency);
-            cellFromPosition = worley.GetCellDataFromPosition(cellFromIndex.position.x, cellFromIndex.position.z, frequency);
+            cellFromPosition = worley.GetCellDataFromPosition(randomPosition.x, randomPosition.z, frequency);
+            cellFromIndex = worley.GetCellDataFromIndex(cellFromPosition.index, frequency);
 
-            return new WorleyDatas(pointFromPosition, cellFromIndex, cellFromPosition);
+            return new WorleyDatas(cellFromIndex, cellFromPosition);
         }
 
         struct WorleyDatas
         {
-            public readonly TreeWorleyNoise.PointData pointFromPosition;
             public readonly TreeWorleyNoise.CellData cellFromIndex;
             public readonly TreeWorleyNoise.CellData cellFromPosition;
-            public WorleyDatas(TreeWorleyNoise.PointData pointFromPosition, TreeWorleyNoise.CellData cellFromIndex, TreeWorleyNoise.CellData cellFromPosition)
+            public WorleyDatas(TreeWorleyNoise.CellData cellFromIndex, TreeWorleyNoise.CellData cellFromPosition)
             {
-                this.pointFromPosition = pointFromPosition;
                 this.cellFromIndex = cellFromIndex;
                 this.cellFromPosition = cellFromPosition;
             }

@@ -116,12 +116,16 @@ public struct TreeGenerator
         while(toCheck.Count > 0)
         {
             TreeWorleyNoise.CellData cell = toCheck.Dequeue();
+
+            float distanceToEdge;
          
-            TreeWorleyNoise.PointData cellPointInParent = worley.GetPointDataFromPosition(cell.position.x, cell.position.z, parent.frequency);
-            TreeWorleyNoise.PointData cellPointInRoot = worley.GetPointDataFromPosition(cell.position.x, cell.position.z, root.frequency);
+            TreeWorleyNoise.CellData cellPointInParent = worley.GetCellDataFromPositionWithDist2Edge(cell.position.x, cell.position.z, parent.frequency, out distanceToEdge);
+            TreeWorleyNoise.CellData cellPointInRoot = worley.GetCellDataFromPosition(cell.position.x, cell.position.z, root.frequency);
+
+            if(distanceToEdge == 0) Debug.Log("broke");
 
             float height = parent.height;
-            height += (cellPointInParent.distance2Edge - 0.2f)*layerHeight;
+            height += (distanceToEdge - 0.2f)*layerHeight;
             
             if( !PointIsInParent(cellPointInParent, parent) ||
                 !PointIsInParent(cellPointInRoot, root) )
@@ -160,7 +164,7 @@ public struct TreeGenerator
         return children;
     }
 
-    bool PointIsEligible(TreeWorleyNoise.PointData point, Node parent, TreeWorleyNoise.CellData child)
+    bool PointIsEligible(TreeWorleyNoise.CellData point, Node parent, TreeWorleyNoise.CellData child)
     {
         return  PointIsInParent(point, parent) &&
                 !PointPassesParent(parent, child);
@@ -177,9 +181,9 @@ public struct TreeGenerator
         return pointToRoot < pointToParent;
     }
 
-    bool PointIsInParent(TreeWorleyNoise.PointData point, Node parent)
+    bool PointIsInParent(TreeWorleyNoise.CellData point, Node parent)
     {
-        if(!point.currentCellIndex.Equals(parent.cell.index))
+        if(!point.index.Equals(parent.cell.index))
             return false;
 
         return true;
