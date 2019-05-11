@@ -6,16 +6,16 @@ public struct TreeWorleyNoise
 	public enum DistanceFunction {Natural, Manhatten, Euclidean}
 	public enum CellularReturnType {Distance2, Distance2Add, Distance2Sub, Distance2Mul, Distance2Div}
 
-	int seed;
-	float perterbAmp;
-	float cellularJitter;
-	DistanceFunction distanceFunction;
-	CellularReturnType cellularReturnType;
+	public int seed;
+	
+	public float perterbAmp;
+	public float cellularJitter;
+	public DistanceFunction distanceFunction;
+	public CellularReturnType cellularReturnType;
 	
     CELL_2D cell_2D;
-
-    int X_PRIME;
-	int Y_PRIME;
+    const int X_PRIME = 1619;
+	const int Y_PRIME = 31337;
 
 	public void SetSeed(int newSeed)
 	{
@@ -50,23 +50,8 @@ public struct TreeWorleyNoise
 		public sbyte discovered;
 	}
 
-	public TreeWorleyNoise(int seed, float perterbAmp, float cellularJitter, DistanceFunction distanceFunction, CellularReturnType cellularReturnType)
-	{
-		this.seed = seed;
-		this.perterbAmp = perterbAmp;
-		this.cellularJitter = cellularJitter;
-		this.distanceFunction = distanceFunction;
-		this.cellularReturnType = cellularReturnType;
-
-		cell_2D = new CELL_2D();
-
-		X_PRIME = 1619;
-		Y_PRIME = 31337;
-	}
-
 	public CellData GetCellDataFromIndex(int2 cellIndex, float frequency)
     {
-        
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
 
         float cellX = cellIndex.x + vec.x * cellularJitter;

@@ -54,13 +54,14 @@ namespace Tests
 
         WorleyDatas GetWorleyDatas()
         {
-            TreeWorleyNoise worley = new TreeWorleyNoise(
-                Random().NextInt(),//seed
-                0,//peterb,
-                0.4f,//cellularJitter
-                TreeWorleyNoise.DistanceFunction.Euclidean,//distance function
-                TreeWorleyNoise.CellularReturnType.Distance2//  cellular return type
-            );
+            TreeWorleyNoise worley = new TreeWorleyNoise()
+            {
+                seed = Random().NextInt(),
+                perterbAmp = 0,
+                cellularJitter = 0.4f,
+                distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
+                cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
+            };
             float frequency = 0.01f;
 
             float3 randomPosition = Random().NextFloat3();

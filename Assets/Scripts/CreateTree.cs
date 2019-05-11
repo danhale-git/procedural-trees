@@ -14,16 +14,16 @@ public class CreateTree : MonoBehaviour
         random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
         //random = new Unity.Mathematics.Random(2456235);
 
-        worley = new TreeWorleyNoise(
-            random.NextInt(),
-            0,
-            0.4f,
-            TreeWorleyNoise.DistanceFunction.Euclidean,
-            TreeWorleyNoise.CellularReturnType.Distance2
-        );
+        worley = new TreeWorleyNoise()
+        {
+            seed = random.NextInt(),
+            perterbAmp = 0,
+            cellularJitter = 0.4f,
+            distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
+            cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
+        };
 
         GenerateTree(float3.zero);
-
 
         /*for(int x = -3; x < 3; x++)
             for(int z = -3; z < 3; z++)
