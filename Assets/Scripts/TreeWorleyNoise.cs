@@ -27,11 +27,6 @@ public struct TreeWorleyNoise
 		public int CompareTo(PointData other)
 		{ return currentCellValue.CompareTo(other.currentCellValue); }
 
-		public bool isSet;
-		public float cellGrouping;
-
-		public float3 pointWorldPosition;
-
 		public float distance2Edge, distance;
 
 		public float3 currentCellPosition, adjacentCellPosition;
@@ -46,8 +41,6 @@ public struct TreeWorleyNoise
 		public float value;
 		public int2 index;
 		public float3 position;
-
-		public sbyte discovered;
 	}
 
 	public CellData GetCellDataFromIndex(int2 cellIndex, float frequency)
