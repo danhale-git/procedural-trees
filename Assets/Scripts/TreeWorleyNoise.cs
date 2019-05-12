@@ -64,7 +64,7 @@ public struct TreeWorleyNoise
 		return cell;
 	}
 
-	public CellData GetWorleyData(float x, float z, float frequency, out CellData adjacent, out float distance2Edge, bool getAdjacent = true, bool getDistance = true)
+	public CellData GetWorleyData(float x, float z, float frequency, out CellData adjacent, out float distanceToEdge, bool getAdjacent = true, bool getDistance = true)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref z);
 
@@ -74,8 +74,8 @@ public struct TreeWorleyNoise
 		int xr = FastRound(x);
 		int yr = FastRound(z);
 
-		float distance0 = 999999;
-		float distance1 = 999999;
+		float closestDistance = 999999;
+		float secondClosestDistance = 999999;
 
 		//	Store distance1 index
 		int xc1 = 0, yc1 = 0;
@@ -83,25 +83,12 @@ public struct TreeWorleyNoise
 		//	Store distance0 index in case it is assigned to distance1 later
 		int xc0 = 0, yc0 = 0;
 
-		//	All adjacent cell indices and distances
-		NineInts otherX = new NineInts();
-		NineInts otherY = new NineInts();
-
-		NineFloats otherCellX = new NineFloats();
-		NineFloats otherCellY = new NineFloats();
-
-		NineFloats otherDistance = new NineFloats();
-		for(int i = 0; i < 9; i++)
-		{
-			otherDistance[i] = 999999;
-		}
-
-		int indexCount = 0;
-
-		float3 currentCellPosition = float3.zero;
 		int2 currentCellIndex = int2.zero;
+		float3 currentCellPosition = float3.zero;
+		float currentCellValue = 0;
 
-		float distance = 999999;
+		adjacent = new CellData();
+		distanceToEdge = 999999;
 
 		for (int xi = xr - 1; xi <= xr + 1; xi++)
 				{
@@ -117,46 +104,27 @@ public struct TreeWorleyNoise
 
 						float newDistance;
 
-						switch(distanceFunction)
-						{
-							case DistanceFunction.Natural:
-								newDistance = (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
-								break;
-							case DistanceFunction.Manhatten:
-								newDistance = math.abs(vecX) + math.abs(vecY);
-								break;
-							case DistanceFunction.Euclidean:
-								newDistance = newDistance = vecX * vecX + vecY * vecY;
-								break;
-							default:
-								newDistance = 0;
-								throw new System.Exception("Unrecognised cellular distance function");
-						}
+						newDistance = ApplyDistanceFunction(vecX, vecY);
 						
-						if(newDistance < distance)
+						if(newDistance <= secondClosestDistance)
 						{
-							distance = newDistance;
-						}
-
-						if(newDistance <= distance1)
-						{
-							if(newDistance >= distance0)
+							if(newDistance >= closestDistance)
 							{
-								distance1 = newDistance;
+								secondClosestDistance = newDistance;
 								xc1 = xi;
 								yc1 = yi;
 							}
 							else
 							{
-								distance1 = distance0;
+								secondClosestDistance = closestDistance;
 								xc1 = xc0;
 								yc1 = yc0;
 							}
 						}
 
-						if(newDistance <= distance0)
+						if(newDistance <= closestDistance)
 						{
-							distance0 = newDistance;
+							closestDistance = newDistance;
 							xc0 = xi;
 							yc0 = yi;
 
@@ -164,57 +132,33 @@ public struct TreeWorleyNoise
 							currentCellIndex = new int2(xi, yi);
 						}
 
-						if(getAdjacent || getDistance)
+						if(!getDistance && !getAdjacent)
+							continue;
+
+						float newDistanceToEdge = ApplyDistanceType(closestDistance, newDistance);
+						bool newIsCloser = newDistanceToEdge < distanceToEdge;
+
+						if(getDistance && newIsCloser)
 						{
-							otherDistance[indexCount] = newDistance;
-							indexCount++;
+							distanceToEdge = newDistanceToEdge;
 						}
 						
-						if(getAdjacent)
+						if(getAdjacent && newIsCloser)
 						{
-							//	Store all adjacent cells
-							otherCellX[indexCount] = cellX;
-							otherCellY[indexCount] = cellY;
-							otherX[indexCount] = xi;
-							otherY[indexCount] = yi;
+							adjacent.index = new int2(xi, yi);;
+							adjacent.position = new float3(cellX, 0, cellY) / frequency;
+							adjacent.value = To01(ValCoord2D(seed, xi, yi));
 						}
 					}
 				}
 
-		float currentCellValue = To01(ValCoord2D(seed, xc0, yc0));
+		currentCellValue = To01(ValCoord2D(seed, xc0, yc0));
 
 		CellData cell = new CellData();
 
         cell.index = currentCellIndex;
         cell.position = currentCellPosition;
 		cell.value =  currentCellValue;
-
-		distance2Edge = 999999;
-
-		adjacent = new CellData();
-		int adjacentIndex = 0;
-		
-		if(getAdjacent || getDistance)
-		{
-			for(int i = 0; i < 9; i++)
-			{	
-				float dist2Edge = ApplyDistanceType(distance0, otherDistance[i]);
-				if(dist2Edge < distance2Edge)
-				{
-					distance2Edge = dist2Edge;
-
-					adjacentIndex = i;
-				}
-			}
-			if(distance2Edge == 999999) distance2Edge = 0;
-		}
-
-		if(getAdjacent)
-		{
-			adjacent.index = new int2(otherX[adjacentIndex], otherY[adjacentIndex]);;
-			adjacent.position = new float3(otherCellX[adjacentIndex], 0, otherCellY[adjacentIndex]) / frequency;
-			adjacent.value = To01(ValCoord2D(seed, otherX[adjacentIndex], otherY[adjacentIndex]));
-		}
 
 		return cell;
 	}
@@ -238,107 +182,18 @@ public struct TreeWorleyNoise
 		}
 	}
 
-	struct NineInts
+	float ApplyDistanceFunction(float vecX, float vecY)
 	{
-		int _0;
-		int _1;
-		int _2;
-		int _3;
-		int _4;
-		int _5;
-		int _6;
-		int _7;
-		int _8;
-		
-		public int this[int index]
+		switch(distanceFunction)
 		{
-			get
-			{
-				switch(index)
-				{
-					case 0: return _0;
-					case 1: return _1;
-					case 2: return _2;
-					case 3: return _3;
-					case 4: return _4;
-					case 5: return _5;
-					case 6: return _6;
-					case 7: return _7;
-					case 8: return _8;
-
-					default: throw new System.IndexOutOfRangeException();
-				}
-			}
-
-			set
-			{
-				switch(index)
-				{
-					case 0: _0 = value; break;
-					case 1: _1 = value; break;
-					case 2: _2 = value; break;
-					case 3: _3 = value; break;
-					case 4: _4 = value; break;
-					case 5: _5 = value; break;
-					case 6: _6 = value; break;
-					case 7: _7 = value; break;
-					case 8: _8 = value; break;
-
-					default: throw new System.IndexOutOfRangeException();
-				}
-			}
-		}
-	}
-
-	struct NineFloats
-	{
-		float _0;
-		float _1;
-		float _2;
-		float _3;
-		float _4;
-		float _5;
-		float _6;
-		float _7;
-		float _8;
-		
-		public float this[int index]
-		{
-			get
-			{
-				switch(index)
-				{
-					case 0: return _0;
-					case 1: return _1;
-					case 2: return _2;
-					case 3: return _3;
-					case 4: return _4;
-					case 5: return _5;
-					case 6: return _6;
-					case 7: return _7;
-					case 8: return _8;
-
-					default: throw new System.IndexOutOfRangeException();
-				}
-			}
-
-			set
-			{
-				switch(index)
-				{
-					case 0: _0 = value; break;
-					case 1: _1 = value; break;
-					case 2: _2 = value; break;
-					case 3: _3 = value; break;
-					case 4: _4 = value; break;
-					case 5: _5 = value; break;
-					case 6: _6 = value; break;
-					case 7: _7 = value; break;
-					case 8: _8 = value; break;
-
-					default: throw new System.IndexOutOfRangeException();
-				}
-			}
+			case DistanceFunction.Natural:
+				return (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
+			case DistanceFunction.Manhatten:
+				return math.abs(vecX) + math.abs(vecY);
+			case DistanceFunction.Euclidean:
+				return vecX * vecX + vecY * vecY;
+			default:
+				throw new System.Exception("Unrecognised cellular distance function");
 		}
 	}
 

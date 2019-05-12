@@ -71,6 +71,18 @@ namespace Tests
             Assert.IsTrue(somethingWasGenerated && distanceNotNines);
         }
 
+        [Test]
+        public void AdjacentCellIsDifferent()
+        {
+            TreeWorleyNoise.CellData adjacent;
+            float dist2EdgePlaceholder;
+
+            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacent, out dist2EdgePlaceholder, true, false);
+
+            bool different = !adjacent.index.Equals(cell.index);
+            Assert.IsTrue(different);
+        }
+
         TreeWorleyNoise.CellData GetWorleyDataHelper(out TreeWorleyNoise.CellData adjacentPlaceholder, out float dist2EdgePlaceholder, bool getAdjacent, bool getDistance)
         {
             TreeWorleyNoise worley = GetWorleyGenerator();
