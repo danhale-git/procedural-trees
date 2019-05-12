@@ -32,7 +32,7 @@ public struct TreeWorleyNoise
 		public float3 position;
 	}
 
-	public CellData GetCellDataFromIndex(int2 cellIndex, float frequency)
+	public CellData GetCellData(int2 cellIndex, float frequency)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
 
@@ -48,19 +48,41 @@ public struct TreeWorleyNoise
 		return cell;
     }
 
-	public CellData GetCellDataFromPosition(float x, float y, float frequency)
+	public CellData GetCellData(int x, int y, float frequency)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
-		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, true, true);
-
+		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellDataFromPositionWithDist2Edge(float x, float y, float frequency, out float distanceToEdge)
+	public CellData GetCellData(int x, int y, float frequency, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
-		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, true, true);
-
+		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
+		return cell;
+	}
+	public CellData GetCellData(int x, int y, float frequency, out CellData adjacent, out float distanceToEdge)
+	{
+		CellData cell = GetWorleyData(x, y, frequency, out adjacent, out distanceToEdge, true, true);
+		return cell;
+	}
+	
+	public CellData GetCellData(float3 position, float frequency)
+	{
+		CellData adjacentPlaceholder;
+		float dist2EdgePlaceholder;
+		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+		return cell;
+	}
+	public CellData GetCellData(float3 position, float frequency, out float distanceToEdge)
+	{
+		CellData adjacentPlaceholder;
+		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
+		return cell;
+	}
+	public CellData GetCellData(float3 position, float frequency, out CellData adjacent, out float distanceToEdge)
+	{
+		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
 	}
 
@@ -117,7 +139,7 @@ public struct TreeWorleyNoise
 
 		CellData current = new CellData();
 		adjacent = new CellData();
-		
+
 		current.index = currentCell.index;
 		current.position = currentCell.position / frequency;
 		current.value = To01(ValCoord2D(seed, currentCell.index.x, currentCell.index.y));

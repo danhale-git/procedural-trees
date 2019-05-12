@@ -27,7 +27,7 @@ public struct TreeGenerator
         rootWorley = worley;
         color = Color.green;
 
-        TreeWorleyNoise.CellData cell = worley.GetCellDataFromPosition(rootPosition.x, rootPosition.z, rootFrequency);
+        TreeWorleyNoise.CellData cell = worley.GetCellData(rootPosition, rootFrequency);
         Node root = new Node();
         root.frequency = rootFrequency;
         root.height = rootPosition.y;
@@ -107,7 +107,7 @@ public struct TreeGenerator
         NativeQueue<TreeWorleyNoise.CellData> toCheck = new NativeQueue<TreeWorleyNoise.CellData>(Allocator.Temp);
 
         //  cell at position of parent
-        TreeWorleyNoise.CellData initialCell = worley.GetCellDataFromPosition(parent.cell.position.x, parent.cell.position.z, frequency);
+        TreeWorleyNoise.CellData initialCell = worley.GetCellData(parent.cell.position, frequency);
         toCheck.Enqueue(initialCell);
 
         NativeList<int2> checkedIndices = new NativeList<int2>(Allocator.Temp);
@@ -119,8 +119,8 @@ public struct TreeGenerator
 
             float distanceToEdge;
          
-            TreeWorleyNoise.CellData cellPointInParent = worley.GetCellDataFromPositionWithDist2Edge(cell.position.x, cell.position.z, parent.frequency, out distanceToEdge);
-            TreeWorleyNoise.CellData cellPointInRoot = worley.GetCellDataFromPosition(cell.position.x, cell.position.z, root.frequency);
+            TreeWorleyNoise.CellData cellPointInParent = worley.GetCellData(cell.position, parent.frequency, out distanceToEdge);
+            TreeWorleyNoise.CellData cellPointInRoot = worley.GetCellData(cell.position, root.frequency);
 
             if(distanceToEdge == 0) Debug.Log("broke");
 
@@ -152,7 +152,7 @@ public struct TreeGenerator
                     if(checkedIndices.Contains(index))
                         continue;
 
-                    TreeWorleyNoise.CellData cellToCheck = worley.GetCellDataFromIndex(cell.index + index, frequency);
+                    TreeWorleyNoise.CellData cellToCheck = worley.GetCellData(cell.index + index, frequency);
                     toCheck.Enqueue(cellToCheck);
                     checkedIndices.Add(index);
                 }

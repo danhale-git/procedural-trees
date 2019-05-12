@@ -153,8 +153,8 @@ namespace Tests
             TreeWorleyNoise.CellData cellFromIndex;
             TreeWorleyNoise.CellData cellFromPosition;
 
-            cellFromPosition = worley.GetCellDataFromPosition(randomPosition.x, randomPosition.z, frequency);
-            cellFromIndex = worley.GetCellDataFromIndex(cellFromPosition.index, frequency);
+            cellFromPosition = worley.GetCellData(randomPosition, frequency);
+            cellFromIndex = worley.GetCellData(cellFromPosition.index, frequency);
 
             return new WorleyDatas(cellFromIndex, cellFromPosition);
         }
