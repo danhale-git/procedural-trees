@@ -48,8 +48,8 @@ public class CreateTree : MonoBehaviour
                 float dist2Edge;
                 TreeWorleyNoise.CellData cell = worley.GetCellDataFromPositionWithDist2Edge(x, z, 0.1f, out dist2Edge);
 
-                float colorFloat = cell.value * dist2Edge;
-                float4 color = new float4(colorFloat, colorFloat, colorFloat, 1);
+                float colorFloat = cell.value;
+                float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
 
                 CreateCube(new float3(x, 0, z), color);
 
