@@ -24,6 +24,8 @@ public class CreateTree : MonoBehaviour
         };
 
         GenerateTree(float3.zero);
+
+        DebugWorley(20);
     }
 
     void CreateTrees(int range)

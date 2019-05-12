@@ -52,14 +52,14 @@ public struct TreeWorleyNoise
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
-		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, true, true);
 
 		return cell;
 	}
 	public CellData GetCellDataFromPositionWithDist2Edge(float x, float y, float frequency, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
-		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
+		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, true, true);
 
 		return cell;
 	}
@@ -74,93 +74,86 @@ public struct TreeWorleyNoise
 		int xr = FastRound(x);
 		int yr = FastRound(z);
 
-		float closestDistance = 999999;
-		float secondClosestDistance = 999999;
+		float currentDistance = 999999;
+		float adjacentDistance = 999999;
 
-		//	Store distance1 index
-		int xc1 = 0, yc1 = 0;
+		int2 currentIndex = int2.zero;
+		int2 adjacentIndex = int2.zero;
 
-		//	Store distance0 index in case it is assigned to distance1 later
-		int xc0 = 0, yc0 = 0;
+		float3 currentPosition = float3.zero;
+		float3 adjacentPosition = float3.zero;
 
-		int2 currentCellIndex = int2.zero;
-		float3 currentCellPosition = float3.zero;
-		float currentCellValue = 0;
-
+		CellData current = new CellData();
 		adjacent = new CellData();
 		distanceToEdge = 999999;
 
-		for (int xi = xr - 1; xi <= xr + 1; xi++)
+		for (int newX = xr - 1; newX <= xr + 1; newX++)
+			for (int newY = yr - 1; newY <= yr + 1; newY++)
+			{
+				int2 newIndex = new int2(newX, newY);
+				
+				float2 vec = cell_2D[Hash2D(seed, newX, newY) & 255];
+				float vecX = newX - x + vec.x * cellularJitter;
+				float vecY = newY - z + vec.y * cellularJitter;
+				float newDistance = ApplyDistanceFunction(vecX, vecY);
+
+				float cellX = newX + vec.x * cellularJitter;
+				float cellY = newY + vec.y * cellularJitter;
+				float3 newPosition = new float3(cellX, 0, cellY);
+
+				
+				if(newDistance <= adjacentDistance)
 				{
-					for (int yi = yr - 1; yi <= yr + 1; yi++)
+					if(newDistance >= currentDistance)
 					{
-						float2 vec = cell_2D[Hash2D(seed, xi, yi) & 255];
-
-						float vecX = xi - x + vec.x * cellularJitter;
-						float vecY = yi - z + vec.y * cellularJitter;
-
-						float cellX = xi + vec.x * cellularJitter;
-						float cellY = yi + vec.y * cellularJitter;
-
-						float newDistance;
-
-						newDistance = ApplyDistanceFunction(vecX, vecY);
-						
-						if(newDistance <= secondClosestDistance)
-						{
-							if(newDistance >= closestDistance)
-							{
-								secondClosestDistance = newDistance;
-								xc1 = xi;
-								yc1 = yi;
-							}
-							else
-							{
-								secondClosestDistance = closestDistance;
-								xc1 = xc0;
-								yc1 = yc0;
-							}
-						}
-
-						if(newDistance <= closestDistance)
-						{
-							closestDistance = newDistance;
-							xc0 = xi;
-							yc0 = yi;
-
-							currentCellPosition = new float3(cellX, 0, cellY) / frequency;
-							currentCellIndex = new int2(xi, yi);
-						}
-
-						if(!getDistance && !getAdjacent)
-							continue;
-
-						float newDistanceToEdge = ApplyDistanceType(closestDistance, newDistance);
-						bool newIsCloser = newDistanceToEdge < distanceToEdge;
-
-						if(getDistance && newIsCloser)
-						{
-							distanceToEdge = newDistanceToEdge;
-						}
-						
-						if(getAdjacent && newIsCloser)
-						{
-							adjacent.index = new int2(xi, yi);;
-							adjacent.position = new float3(cellX, 0, cellY) / frequency;
-							adjacent.value = To01(ValCoord2D(seed, xi, yi));
-						}
+						adjacentDistance 	= newDistance;
+						adjacentIndex 		= newIndex;
+						adjacentPosition 	= newPosition;
+					}
+					else
+					{
+						adjacentDistance 	= currentDistance;
+						adjacentIndex 		= currentIndex;
+						adjacentPosition 	= currentPosition;
 					}
 				}
 
-		currentCellValue = To01(ValCoord2D(seed, xc0, yc0));
+				if(newDistance <= currentDistance)
+				{
+					currentDistance 	= newDistance;
+					currentIndex 		= newIndex;
+					currentPosition 	= newPosition;
+				}
 
-		CellData cell = new CellData();
+				
 
-        cell.index = currentCellIndex;
-        cell.position = currentCellPosition;
-		cell.value =  currentCellValue;
+				if(getDistance)
+				{
+					float newDistanceToEdge = ApplyDistanceType(currentDistance, newDistance);
+					if(newDistanceToEdge < distanceToEdge)
+						distanceToEdge = newDistanceToEdge;
+				}
+			}
 
-		return cell;
+		current.index = currentIndex;
+		current.position = currentPosition / frequency;
+		current.value = To01(ValCoord2D(seed, currentIndex.x, currentIndex.y));
+
+		if(getAdjacent)
+		{
+			adjacent.index = adjacentIndex;
+			adjacent.position = adjacentPosition / frequency;
+			adjacent.value = To01(ValCoord2D(seed, adjacentIndex.x, adjacentIndex.y));
+		}
+
+		return current;
+	}
+
+	struct CellProcessing
+	{
+		public float distance;
+		public int2 index;
+		public float3 position;
 	}
 
 	float ApplyDistanceType(float distance, float otherDistance)

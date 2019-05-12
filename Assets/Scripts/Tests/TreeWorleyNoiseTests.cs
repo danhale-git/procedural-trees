@@ -79,8 +79,9 @@ namespace Tests
 
             TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacent, out dist2EdgePlaceholder, true, false);
 
+            bool notZero = adjacent.value != 0;
             bool different = !adjacent.index.Equals(cell.index);
-            Assert.IsTrue(different);
+            Assert.IsTrue(notZero && different, "adjacent is zero: "+notZero);
         }
 
         TreeWorleyNoise.CellData GetWorleyDataHelper(out TreeWorleyNoise.CellData adjacentPlaceholder, out float dist2EdgePlaceholder, bool getAdjacent, bool getDistance)
