@@ -18,14 +18,14 @@ public class CreateTree : MonoBehaviour
         {
             seed = random.NextInt(),
             perterbAmp = 0,
-            cellularJitter = 0.4f,
+            cellularJitter = 0.2f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
 
-        GenerateTree(float3.zero);
+        GenerateTree2(int2.zero);
 
-        DebugWorley(50);
+        //DebugWorley(20);
     }
 
     void CreateTrees(int range)
@@ -44,11 +44,11 @@ public class CreateTree : MonoBehaviour
         for(int x = -range; x < range; x++)
             for(int z = -range; z < range; z++)
             {
-                float xf = 0.1f * ( (float)math.abs(x) / range );
-                float zf = 0.1f * ( (float)math.abs(z) / range );
+                /*float xf = 0.1f * ( (float)math.abs(x) / range );
+                float zf = 0.1f * ( (float)math.abs(z) / range ); */
 
                 float dist2Edge;
-                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, new float2(xf, zf), out dist2Edge);
+                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, 0.1f, out dist2Edge);
 
                 float colorFloat = cell.value;
                 float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
@@ -81,5 +81,17 @@ public class CreateTree : MonoBehaviour
             random = random
         };
         treeGenerator.Execute();
+    }
+
+    void GenerateTree2(int2 index)
+    {
+        GenerateTreeMeshJob generator = new GenerateTreeMeshJob{
+            rootIndex = index,
+            rootWorley = worley,
+            rootFrequency = 0.1f,
+            crownHeight = 5,
+            random = random
+        };
+        generator.Execute();
     }
 }
