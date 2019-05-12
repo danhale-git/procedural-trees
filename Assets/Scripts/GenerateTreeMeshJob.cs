@@ -35,30 +35,8 @@ public struct GenerateTreeMeshJob
     public void Execute()
     {
         color = Color.green;
-
-        TreeWorleyNoise crownWorley = rootWorley;
-        crownWorley.SetSeed(random.NextInt());
-        float crownFrequency = rootFrequency * 3;
-
         Node root = RootNode();
-
-        crowns = GetChildren(root, ref rootWorley, 3);
-
-        float3 rootPosition = root.Position();
-        for(int c = 0; c < crowns.Length; c++)
-        {
-            Draw(root.Position(), crowns[c].Position());
-
-            NativeList<Node> branches = GetChildren(crowns[c], ref rootWorley, 2);
-            for(int b = 0; b < branches.Length; b++)
-            {
-                if(b == 0)
-                    Draw(crowns[c].Position(), branches[b].Position());
-                else
-                    Draw(branches[b-1].Position(), branches[b].Position());
-
-            }
-        }
+        Branch(root);
     }
 
     Node RootNode()
@@ -68,6 +46,34 @@ public struct GenerateTreeMeshJob
             cell = rootWorley.GetCellData(rootIndex, rootFrequency),
             height = crownHeight
         };
+    }
+
+    void Branch(Node root)
+    {
+        TreeWorleyNoise branchWorley = rootWorley;
+        branchWorley.SetSeed(random.NextInt());
+
+        crowns = GetChildren(root, ref branchWorley, 3);
+
+        float3 rootPosition = root.Position();
+        for(int c = 0; c < crowns.Length; c++)
+        {
+            NativeList<Node> branches = GetChildren(crowns[c], ref branchWorley, 2);
+
+            float3 averagePosition = float3.zero;
+            for(int b = 0; b < branches.Length; b++)
+                averagePosition += branches[b].Position();
+
+            averagePosition += rootPosition;
+            averagePosition /= branches.Length+1;
+
+            Draw(root.Position(), averagePosition);
+
+            for(int b = 0; b < branches.Length; b++)
+            {
+                Draw(averagePosition, branches[b].Position());
+            }
+        }
     }
 
     NativeList<Node> GetChildren(Node parent, ref TreeWorleyNoise worley, int multiplier)
@@ -99,7 +105,7 @@ public struct GenerateTreeMeshJob
             if( !PointIsInParent(cellPointInParent, parent.cell.index) ||
                 !PointIsInParent(cellPointInRoot, rootIndex) )
             {
-                DrawDebug(parent.Position(), cell.position + new float3(0, height, 0));
+                //DrawDebug(parent.Position(), cell.position + new float3(0, height, 0));
                 continue;
             }
 

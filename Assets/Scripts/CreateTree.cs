@@ -23,9 +23,9 @@ public class CreateTree : MonoBehaviour
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
 
-        GenerateTree2(int2.zero);
+        GenerateTree(int2.zero);
 
-        //DebugWorley(20);
+        DebugWorley(20);
     }
 
     void CreateTrees(int range)
@@ -34,8 +34,7 @@ public class CreateTree : MonoBehaviour
             for(int z = -range; z < range; z++)
             {
                 int2 index = new int2(x,z);
-                float3 position = worley.GetCellData(index, 0.1f).position;
-                GenerateTree(position); 
+                GenerateTree(index); 
             } 
     }
 
@@ -66,24 +65,7 @@ public class CreateTree : MonoBehaviour
         return cube;
     }
 
-    void GenerateTree(float3 rootPosition)
-    {
-        TreeGenerator treeGenerator = new TreeGenerator{
-            rootFrequency = 0.1f,
-            rootPosition = rootPosition,
-            layerHeight = 5,
-            worley = worley,
-
-            branchLevels = 3,
-            trunkLevels = 2,
-            allowBranchesToPassTrunk = true,
-
-            random = random
-        };
-        treeGenerator.Execute();
-    }
-
-    void GenerateTree2(int2 index)
+    void GenerateTree(int2 index)
     {
         GenerateTreeMeshJob generator = new GenerateTreeMeshJob{
             rootIndex = index,
