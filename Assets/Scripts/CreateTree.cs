@@ -52,10 +52,6 @@ public class CreateTree : MonoBehaviour
                 float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
 
                 CreateCube(new float3(x, 0, z), color);
-
-                /*int2 index = new int2(x,z);
-                float3 position = worley.GetCellDataFromIndex(index, 0.1f).position;
-                GenerateTree(position); */
             } 
     }
 
