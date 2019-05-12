@@ -32,7 +32,7 @@ public struct TreeWorleyNoise
 		public float3 position;
 	}
 
-	public CellData GetCellData(int2 cellIndex, float frequency)
+	public CellData GetCellData(int2 cellIndex, float2 frequency)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
 
@@ -42,56 +42,56 @@ public struct TreeWorleyNoise
 		CellData cell = new CellData();
 
         cell.index = cellIndex;
-        cell.position = new float3(cellX, 0, cellY) / frequency;
+        cell.position = new float3(cellX / frequency.x, 0, cellY / frequency.y);
 		cell.value =  To01(ValCoord2D(seed, cellIndex.x, cellIndex.y));
 		
 		return cell;
     }
 
-	public CellData GetCellData(int x, int y, float frequency)
+	public CellData GetCellData(int x, int y, float2 frequency)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellData(int x, int y, float frequency, out float distanceToEdge)
+	public CellData GetCellData(int x, int y, float2 frequency, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
 		return cell;
 	}
-	public CellData GetCellData(int x, int y, float frequency, out CellData adjacent, out float distanceToEdge)
+	public CellData GetCellData(int x, int y, float2 frequency, out CellData adjacent, out float distanceToEdge)
 	{
 		CellData cell = GetWorleyData(x, y, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
 	}
 	
-	public CellData GetCellData(float3 position, float frequency)
+	public CellData GetCellData(float3 position, float2 frequency)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellData(float3 position, float frequency, out float distanceToEdge)
+	public CellData GetCellData(float3 position, float2 frequency, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
 		return cell;
 	}
-	public CellData GetCellData(float3 position, float frequency, out CellData adjacent, out float distanceToEdge)
+	public CellData GetCellData(float3 position, float2 frequency, out CellData adjacent, out float distanceToEdge)
 	{
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
 	}
 
-	public CellData GetWorleyData(float x, float z, float frequency, out CellData adjacent, out float distanceToEdge, bool getAdjacent = true, bool getDistance = true)
+	public CellData GetWorleyData(float x, float z, float2 frequency, out CellData adjacent, out float distanceToEdge, bool getAdjacent = true, bool getDistance = true)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref z);
 
-		x *= frequency;
-		z *= frequency;
+		x *= frequency.x;
+		z *= frequency.y;
 
 		int xr = FastRound(x);
 		int yr = FastRound(z);
@@ -141,13 +141,13 @@ public struct TreeWorleyNoise
 		adjacent = new CellData();
 
 		current.index = currentCell.index;
-		current.position = currentCell.position / frequency;
+		current.position = new float3(currentCell.position.x / frequency.x, 0, currentCell.position.z / frequency.y);
 		current.value = To01(ValCoord2D(seed, currentCell.index.x, currentCell.index.y));
 
 		if(getAdjacent)
 		{
 			adjacent.index = adjacentCell.index;
-			adjacent.position = adjacentCell.position / frequency;
+			adjacent.position = new float3(adjacentCell.position.x / frequency.x, 0, adjacentCell.position.z / frequency.y);
 			adjacent.value = To01(ValCoord2D(seed, adjacentCell.index.x, adjacentCell.index.y));
 		}
 
@@ -224,10 +224,10 @@ public struct TreeWorleyNoise
 		return (value * 0.5f) + 0.5f;
 	}
 
-	void SingleGradientPerturb(int seed, float perturbAmp, float frequency, ref float x, ref float y)
+	void SingleGradientPerturb(int seed, float perturbAmp, float2 frequency, ref float x, ref float y)
 	{
-		float xf = x * frequency;
-		float yf = y * frequency;
+		float xf = x * frequency.x;
+		float yf = y * frequency.y;
 
 		int x0 = FastFloor(xf);
 		int y0 = FastFloor(yf);

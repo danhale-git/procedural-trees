@@ -46,7 +46,7 @@ public class CreateTree : MonoBehaviour
             {
                 
                 float dist2Edge;
-                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, 0.05f, out dist2Edge);
+                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, new float2(0.01f, 0.1f), out dist2Edge);
 
                 float colorFloat = cell.value;
                 float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
