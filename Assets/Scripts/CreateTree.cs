@@ -24,14 +24,45 @@ public class CreateTree : MonoBehaviour
         };
 
         GenerateTree(float3.zero);
+    }
 
-        /*for(int x = -3; x < 3; x++)
-            for(int z = -3; z < 3; z++)
+    void CreateTrees(int range)
+    {
+        for(int x = -range; x < range; x++)
+            for(int z = -range; z < range; z++)
             {
                 int2 index = new int2(x,z);
                 float3 position = worley.GetCellDataFromIndex(index, 0.1f).position;
-                GenerateTree(position);
-            } */
+                GenerateTree(position); 
+            } 
+    }
+
+    void DebugWorley(int range)
+    {
+        for(int x = -range; x < range; x++)
+            for(int z = -range; z < range; z++)
+            {
+                
+                float dist2Edge;
+                TreeWorleyNoise.CellData cell = worley.GetCellDataFromPositionWithDist2Edge(x, z, 0.1f, out dist2Edge);
+
+                float colorFloat = cell.value * dist2Edge;
+                float4 color = new float4(colorFloat, colorFloat, colorFloat, 1);
+
+                CreateCube(new float3(x, 0, z), color);
+
+                /*int2 index = new int2(x,z);
+                float3 position = worley.GetCellDataFromIndex(index, 0.1f).position;
+                GenerateTree(position); */
+            } 
+    }
+
+    GameObject CreateCube(float3 position, float4 c)
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.Translate(position);
+        cube.GetComponent<MeshRenderer>().material.color = new Color(c.x, c.y, c.z, c.w);
+        return cube;
     }
 
     void GenerateTree(float3 rootPosition)
