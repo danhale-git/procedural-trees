@@ -44,9 +44,11 @@ public class CreateTree : MonoBehaviour
         for(int x = -range; x < range; x++)
             for(int z = -range; z < range; z++)
             {
-                
+                float xf = 0.1f * ( (float)math.abs(x) / range );
+                float zf = 0.1f * ( (float)math.abs(z) / range );
+
                 float dist2Edge;
-                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, new float2(0.01f, 0.1f), out dist2Edge);
+                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, new float2(xf, zf), out dist2Edge);
 
                 float colorFloat = cell.value;
                 float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
