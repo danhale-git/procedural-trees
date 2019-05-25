@@ -19,11 +19,14 @@ public class TreeManager : MonoBehaviour
         {
             //seed = random.NextInt(),
             seed = 1234,
+            //seed = -587290213, // Broken worley mesh
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
+
+        Debug.Log("Seed: "+worley.seed);
 
 //        GenerateTree(int2.zero);
         WorleyCellMesh worleyMesh;
