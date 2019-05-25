@@ -29,7 +29,7 @@ public class TreeManager : MonoBehaviour
         Debug.Log("Seed: "+worley.seed);
 
 //        GenerateTree(int2.zero);
-        WorleyCellMesh worleyMesh;
+        WorleyCellMesh worleyMesh = new WorleyCellMesh();
         worleyMesh.worley = this.worley;
         worleyMesh.index = int2.zero;
         worleyMesh.Execute();
