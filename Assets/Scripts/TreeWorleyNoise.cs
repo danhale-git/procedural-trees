@@ -1,5 +1,6 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
+using UnityEngine;
 
 public struct TreeWorleyNoise
 {
@@ -32,6 +33,87 @@ public struct TreeWorleyNoise
 		public float3 position;
 	}
 
+	public void GetCellVertices(int2 cellIndex, float2 frequency)
+	{
+		CellData currentCell = GetCellData(cellIndex, frequency);
+
+		AdjacentIntOffsetsClockwise adjacentOffsets;
+
+		CellData previousCell = GetCellData(adjacentOffsets[7] + currentCell.index, frequency);
+		//float3 previousMidPoint = 
+
+		for(int i = 0; i < 8; i++)
+		{
+			CellData adjacentCell = GetCellData(adjacentOffsets[i] + currentCell.index, frequency);
+
+			float3 offset = adjacentCell.position - currentCell.position;
+
+			float3 midPoint = currentCell.position + (offset * 0.5f);
+
+			float3 rightAngle = math.cross(offset, new float3(0, 1, 0));
+			
+			Draw(currentCell.position, midPoint);
+			Draw(midPoint, midPoint + rightAngle);
+
+			//bool foundIntersection;
+			//float2 coords = GetIntersectionPointCoordinates();
+
+			previousCell = adjacentCell;
+		}
+
+		/*for(int x = -1; x <= 1; x++)
+			for(int z = -1; z <= 1; z++)
+			{
+				if(x == 0 && z == 0)
+					continue;
+				CellData adjacentCell = GetCellData(new int2(x, z) + currentCell.index, frequency);
+
+				float3 offset = adjacentCell.position - currentCell.position;
+
+				float3 midPoint = currentCell.position + (offset * 0.5f);
+
+				Draw(currentCell.position, midPoint);
+			} */
+
+	}
+
+	struct Edge
+	{
+		float3 midPoint;
+	}
+
+	void Draw(float3 parentPosition, float3 childPosition)
+    {
+        Debug.DrawLine(parentPosition, childPosition, Color.yellow, 1000);
+    }
+
+	public float2 GetIntersectionPointCoordinates(float2 A1, float2 A2, float2 B1, float2 B2, out bool found)
+	{
+		/*	A & B: the two lines,
+			A_1, B_1: the arbitrary starting points of the two lines,
+			A_2, B_2: the arbitrary points which tells the direction of the two lines,
+			X: the intersection point,
+			O: the origin point. */
+
+		float tmp = (B2.x - B1.x) * (A2.y - A1.y) - (B2.y - B1.y) * (A2.x - A1.x);
+	
+		if (tmp == 0)
+		{
+			// No solution!
+			found = false;
+			return float2.zero;
+		}
+	
+		float mu = ((A1.x - B1.x) * (A2.y - A1.y) - (A1.y - B1.y) * (A2.x - A1.x)) / tmp;
+	
+		found = true;
+	
+		return new float2(
+			B1.x + (B2.x - B1.x) * mu,
+			B1.y + (B2.y - B1.y) * mu
+		);
+	}
+
 	public CellData GetCellData(int2 cellIndex, float2 frequency)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
@@ -48,20 +130,20 @@ public struct TreeWorleyNoise
 		return cell;
     }
 
-	public CellData GetCellData(int x, int y, float2 frequency)
+	public CellData GetCellData(float x, float y, float2 frequency)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellData(int x, int y, float2 frequency, out float distanceToEdge)
+	public CellData GetCellData(float x, float y, float2 frequency, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
 		return cell;
 	}
-	public CellData GetCellData(int x, int y, float2 frequency, out CellData adjacent, out float distanceToEdge)
+	public CellData GetCellData(float x, float y, float2 frequency, out CellData adjacent, out float distanceToEdge)
 	{
 		CellData cell = GetWorleyData(x, y, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
@@ -85,6 +167,56 @@ public struct TreeWorleyNoise
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
 	}
+
+	/*public void GetVertices(float x, float z, float2 frequency)
+	{
+		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref z);
+
+		x *= frequency.x;
+		z *= frequency.y;
+
+		int xr = FastRound(x);
+		int yr = FastRound(z);
+
+		CellProcessing currentCell = new CellProcessing();
+		CellProcessing adjacentCell = new CellProcessing();
+		currentCell.distance = 999999;
+		adjacentCell.distance = 999999;
+
+		for (int newX = xr - 1; newX <= xr + 1; newX++)
+			for (int newY = yr - 1; newY <= yr + 1; newY++)
+			{
+				float2 vec = cell_2D[Hash2D(seed, newX, newY) & 255];
+				float vecX = newX - x + vec.x * cellularJitter;
+				float vecY = newY - z + vec.y * cellularJitter;
+
+				float cellX = newX + vec.x * cellularJitter;
+				float cellY = newY + vec.y * cellularJitter;
+
+				CellProcessing newCell = new CellProcessing();
+				newCell.index = new int2(newX, newY);
+				newCell.distance = ApplyDistanceFunction(vecX, vecY);
+				newCell.position = new float3(cellX, 0, cellY);
+				
+				if(newCell.distance <= adjacentCell.distance)
+				{
+					if(newCell.distance >= currentCell.distance)
+						adjacentCell = newCell;
+					else
+						adjacentCell = currentCell;
+				}
+
+				if(newCell.distance <= currentCell.distance)
+					currentCell = newCell;
+
+			}
+
+		CellData current = new CellData();
+
+		current.index = currentCell.index;
+		current.position = new float3(currentCell.position.x / frequency.x, 0, currentCell.position.z / frequency.y);
+		current.value = To01(ValCoord2D(seed, currentCell.index.x, currentCell.index.y));
+	} */
 
 	public CellData GetWorleyData(float x, float z, float2 frequency, out CellData adjacent, out float distanceToEdge, bool getAdjacent = true, bool getDistance = true)
 	{

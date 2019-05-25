@@ -11,5 +11,7 @@ public struct WorleyCellMesh
     {
         TreeWorleyNoise.CellData cell = worley.GetCellData(index, TreeManager.rootFrequency);
         TreeManager.CreateCube(cell.position + new float3(0,10,0), new float4(1));
+
+        worley.GetCellVertices(cell.index, TreeManager.rootFrequency);
     }
 }
