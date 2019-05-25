@@ -39,26 +39,35 @@ public struct TreeWorleyNoise
 
 		AdjacentIntOffsetsClockwise adjacentOffsets;
 
-		CellData previousCell = GetCellData(adjacentOffsets[7] + currentCell.index, frequency);
-		//float3 previousMidPoint = 
+		Edge previousEdge = GetEdge(currentCell, GetCellData(adjacentOffsets[7] + currentCell.index, frequency));
 
 		for(int i = 0; i < 8; i++)
 		{
 			CellData adjacentCell = GetCellData(adjacentOffsets[i] + currentCell.index, frequency);
 
-			float3 offset = adjacentCell.position - currentCell.position;
+			int nextInt = i == 7 ? 0 : i + 1;
+			Edge nextEdge = GetEdge(currentCell, GetCellData(adjacentOffsets[nextInt] + currentCell.index, frequency));
 
-			float3 midPoint = currentCell.position + (offset * 0.5f);
+			Edge edge = GetEdge(currentCell, adjacentCell);
 
-			float3 rightAngle = math.cross(offset, new float3(0, 1, 0));
+			bool intersectionFound;
+
+			float3 intersection = GetIntersectionPointCoordinates(edge.midPoint, edge.left, previousEdge.midPoint, previousEdge.right, out intersectionFound);
+
+			if(!intersectionFound)
+				continue;
+
+			Draw(currentCell.position, intersection, Color.yellow);
 			
-			Draw(currentCell.position, midPoint);
-			Draw(midPoint, midPoint + rightAngle);
+			float colorFloat = (float)i / 8;
+			Color lineColor = new Color(colorFloat, colorFloat, colorFloat);
+			Draw(edge.midPoint, edge.left, lineColor);
+			Draw(edge.midPoint, edge.right, lineColor);
 
 			//bool foundIntersection;
 			//float2 coords = GetIntersectionPointCoordinates();
 
-			previousCell = adjacentCell;
+			previousEdge = edge;
 		}
 
 		/*for(int x = -1; x <= 1; x++)
@@ -79,15 +88,42 @@ public struct TreeWorleyNoise
 
 	struct Edge
 	{
-		float3 midPoint;
+		public float3 midPoint;
+		public float3 edgeDirection;
+
+		public float3 left{
+			get{
+				return midPoint + edgeDirection;
+			}
+		}
+		public float3 right{
+			get{
+				return midPoint - edgeDirection;
+			}
+		} 
 	}
 
-	void Draw(float3 parentPosition, float3 childPosition)
+	Edge GetEdge(CellData currentCell, CellData adjacentCell)
+	{
+		float3 offset = adjacentCell.position - currentCell.position;
+
+		float3 midPoint = currentCell.position + (offset * 0.5f);
+
+		float3 rightAngle = math.cross(offset, new float3(0, 1, 0));
+
+		return new Edge{
+			midPoint = midPoint,
+			edgeDirection = rightAngle
+		};
+		
+	}
+
+	void Draw(float3 parentPosition, float3 childPosition, Color color)
     {
-        Debug.DrawLine(parentPosition, childPosition, Color.yellow, 1000);
+        Debug.DrawLine(parentPosition, childPosition, color, 1000);
     }
 
-	public float2 GetIntersectionPointCoordinates(float2 A1, float2 A2, float2 B1, float2 B2, out bool found)
+	public float3 GetIntersectionPointCoordinates(float3 A1, float3 A2, float3 B1, float3 B2, out bool found)
 	{
 		/*	A & B: the two lines,
 			A_1, B_1: the arbitrary starting points of the two lines,
@@ -95,22 +131,24 @@ public struct TreeWorleyNoise
 			X: the intersection point,
 			O: the origin point. */
 
-		float tmp = (B2.x - B1.x) * (A2.y - A1.y) - (B2.y - B1.y) * (A2.x - A1.x);
+		float tmp = (B2.x - B1.x) * (A2.z - A1.z) - (B2.z - B1.z) * (A2.x - A1.x);
 	
 		if (tmp == 0)
 		{
+			Debug.Log("skipped a line");
 			// No solution!
 			found = false;
-			return float2.zero;
+			return float3.zero;
 		}
 	
-		float mu = ((A1.x - B1.x) * (A2.y - A1.y) - (A1.y - B1.y) * (A2.x - A1.x)) / tmp;
+		float mu = ((A1.x - B1.x) * (A2.z - A1.z) - (A1.z - B1.z) * (A2.x - A1.x)) / tmp;
 	
 		found = true;
 	
-		return new float2(
+		return new float3(
 			B1.x + (B2.x - B1.x) * mu,
-			B1.y + (B2.y - B1.y) * mu
+			0,
+			B1.z + (B2.z - B1.z) * mu
 		);
 	}
 

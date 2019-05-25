@@ -19,7 +19,7 @@ public class TreeManager : MonoBehaviour
         {
             seed = random.NextInt(),
             perterbAmp = 0,
-            cellularJitter = 0.2f,
+            cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
