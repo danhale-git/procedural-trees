@@ -66,29 +66,23 @@ public struct WorleyCellMesh
 
 		for(int i = 0; i < 8; i++)
 		{
-			int currentIndex = i;
             int previousIndex = i > 0 ? i-1 : 7;
+			int currentIndex = i;
 			int nextIndex = i < 7 ? i+1 : 0;
 
 			Edge nextEdge = edgesCopy[nextIndex];
-
-			Edge previousEdge = edgesCopy[previousIndex];
-
 			Edge edge = edgesCopy[currentIndex];
+			Edge previousEdge = edgesCopy[previousIndex];
 
 			bool leftIntersectionFound;
 			float3 leftIntersection = GetIntersectionPointCoordinates(edge.midPoint, edge.left, previousEdge.midPoint, previousEdge.right, out leftIntersectionFound);
 
 			bool rightIntersectionFound;
 			float3 rightIntersection = GetIntersectionPointCoordinates(edge.midPoint, edge.right, nextEdge.midPoint, nextEdge.left, out rightIntersectionFound);
-            
-            Draw(currentCell.position, leftIntersection, new Color(1,0,0,0.5f));
-            Draw(currentCell.position, rightIntersection, new Color(0,1,0,0.5f));
 
 			if(leftIntersectionFound && rightIntersectionFound)
 			{
                 vertices.Add(leftIntersection);
-
             }
         }
     }
@@ -101,7 +95,7 @@ public struct WorleyCellMesh
 			int nextIndex = i < vertices.Length-1 ? i+1 : 0;
 
             Draw(vertices[currentIndex], vertices[nextIndex], Color.red);
-            //Draw(currentCell.position, vertices[nextIndex], Color.white);
+            Draw(currentCell.position, vertices[nextIndex], Color.white);
         }
     }
 

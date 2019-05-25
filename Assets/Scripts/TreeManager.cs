@@ -17,10 +17,10 @@ public class TreeManager : MonoBehaviour
 
         worley = new TreeWorleyNoise()
         {
-            seed = random.NextInt(),
+            //seed = random.NextInt(),
             //seed = 1234,
             //seed = -587290213, // Broken worley mesh
-            //seed = 368043453, // Worley mesh one very distant edge
+            seed = 368043453, // Worley mesh one very distant edge
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
