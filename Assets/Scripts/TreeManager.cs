@@ -4,8 +4,9 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
 
-public class CreateTree : MonoBehaviour
+public class TreeManager : MonoBehaviour
 {
+    public const float rootFrequency = 0.1f;
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
@@ -24,6 +25,10 @@ public class CreateTree : MonoBehaviour
         };
 
         GenerateTree(int2.zero);
+        WorleyCellMesh worleyMesh;
+        worleyMesh.worley = this.worley;
+        worleyMesh.index = int2.zero;
+        worleyMesh.Execute();
 
         DebugWorley(20);
     }
@@ -47,7 +52,7 @@ public class CreateTree : MonoBehaviour
                 float zf = 0.1f * ( (float)math.abs(z) / range ); */
 
                 float dist2Edge;
-                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, 0.1f, out dist2Edge);
+                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
 
                 float colorFloat = cell.value;
                 float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
@@ -56,7 +61,7 @@ public class CreateTree : MonoBehaviour
             } 
     }
 
-    GameObject CreateCube(float3 position, float4 c)
+    public static GameObject CreateCube(float3 position, float4 c)
     {
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Quad);
         cube.transform.Translate(position);
@@ -70,7 +75,7 @@ public class CreateTree : MonoBehaviour
         GenerateTreeMeshJob generator = new GenerateTreeMeshJob{
             rootIndex = index,
             rootWorley = worley,
-            rootFrequency = 0.1f,
+            rootFrequency = rootFrequency,
             crownHeight = 5,
             random = random
         };
