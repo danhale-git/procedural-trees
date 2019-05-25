@@ -17,14 +17,15 @@ public class TreeManager : MonoBehaviour
 
         worley = new TreeWorleyNoise()
         {
-            seed = random.NextInt(),
+            //seed = random.NextInt(),
+            seed = 1234,
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
 
-        GenerateTree(int2.zero);
+//        GenerateTree(int2.zero);
         WorleyCellMesh worleyMesh;
         worleyMesh.worley = this.worley;
         worleyMesh.index = int2.zero;
@@ -55,7 +56,7 @@ public class TreeManager : MonoBehaviour
                 TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
 
                 float colorFloat = cell.value;
-                float4 color = new float4(colorFloat + dist2Edge, colorFloat, colorFloat, 1);
+                float4 color = new float4(colorFloat/* + dist2Edge */, colorFloat, colorFloat, 1);
 
                 CreateCube(new float3(x, 0, z), color);
             } 
