@@ -17,9 +17,10 @@ public class TreeManager : MonoBehaviour
 
         worley = new TreeWorleyNoise()
         {
-            //seed = random.NextInt(),
-            seed = 1234,
+            seed = random.NextInt(),
+            //seed = 1234,
             //seed = -587290213, // Broken worley mesh
+            //seed = 368043453, // Worley mesh one very distant edge
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
@@ -28,13 +29,30 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
-//        GenerateTree(int2.zero);
-        WorleyCellMesh worleyMesh = new WorleyCellMesh();
-        worleyMesh.worley = this.worley;
-        worleyMesh.index = int2.zero;
-        worleyMesh.Execute();
+        //GenerateTree(int2.zero);
+
+        //WorleyMeshTesst(1);
+        GenerateWorleyMesh(int2.zero); 
+        
 
         DebugWorley(20);
+    }
+
+    void WorleyMeshTesst(int range)
+    {
+        for(int x = -range; x < range; x++)
+            for(int z = -range; z < range; z++)
+            {
+                int2 index = new int2(x,z);
+                GenerateWorleyMesh(index);
+            } 
+    }
+    void GenerateWorleyMesh(int2 index)
+    {
+        WorleyCellMesh worleyMesh = new WorleyCellMesh();
+        worleyMesh.worley = this.worley;
+        worleyMesh.index = index;
+        worleyMesh.Execute();
     }
 
     void CreateTrees(int range)
