@@ -67,20 +67,19 @@ public struct WorleyCellMesh
 		vertices = new NativeList<float3>(Allocator.Temp);
 
 		int2 debugIndex = new int2(-1,0);
-        //NativeArray<Edge> edgesCopy = new NativeArray<Edge>(8, Allocator.Temp);
-        //edgesCopy.CopyFrom(edges);
+		
 
-		int index = 0;
-		while(index < edges.Count)
+		int currentIndex = 0;
+		while(currentIndex < edges.Count)
 		{
-			Edge edge = edges[index];
+			Edge edge = edges[currentIndex];
 			Debug.Log(edge.adjacentCell.index+" =============================");
 
 			float3 rightIntersection = float3.zero;
 			bool rightIntersectionFound = false;
 
 			int neighboursChecked = 0;
-			int nextIndex = index + 1;
+			int nextIndex = currentIndex + 1;
 			
 			while(!rightIntersectionFound && neighboursChecked <= 4)
 			{
@@ -93,9 +92,9 @@ public struct WorleyCellMesh
 
 				if(!rightIntersectionFound)
 				{
-					Debug.Log(nextEdge.adjacentCell.index+" removed");
-					edges.Remove(nextEdge);
-					//TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.red);
+					Debug.Log(nextEdge.adjacentCell.index+" skipped");
+					currentIndex++;
+					nextIndex = WrapEdgeIndex(nextIndex+1);
 
 					if(edge.adjacentCell.index.Equals(debugIndex))
 					{
@@ -106,14 +105,13 @@ public struct WorleyCellMesh
 				{
 					Debug.Log(edge.adjacentCell.index+" vertex found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
 					vertices.Add(rightIntersection);
-					index++;
+					currentIndex++;
 
 					if(edge.adjacentCell.index.Equals(debugIndex))
 					{
-						TreeManager.CreateCube(edge.adjacentCell.position+ new float3(0,1,0), Color.cyan);
+						TreeManager.CreateCube(edge.adjacentCell.position+ new float3(0,1,0), Color.white);
 						TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.green);
 					}
-					//TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.green);
 				}
 			}
 		}
@@ -214,6 +212,11 @@ public struct WorleyCellMesh
 	
 		circle.center = center;
 		circle.radius = math.sqrt((center.x - p0.x)*(center.x - p0.x) + (center.z - p0.z)*(center.z - p0.z));
+
+		Draw(circle.center, circle.center+ new float3(circle.radius,0,0), Color.black);
+		Draw(circle.center, circle.center+ new float3(-circle.radius,0,0), Color.black);
+		Draw(circle.center, circle.center+ new float3(0,0,circle.radius), Color.black);
+		Draw(circle.center, circle.center+ new float3(0,0,-circle.radius), Color.black);
 	
 		return circle;
 	}
