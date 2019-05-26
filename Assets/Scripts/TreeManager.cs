@@ -10,8 +10,18 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
+    static GameObject textPrefab;
+    public static void CreateText(float3 position, string text)
+    {
+        GameObject textObject = Instantiate<GameObject>(textPrefab, position, Quaternion.Euler(90,0,0));
+        TextMesh textMesh = textObject.GetComponent<TextMesh>();
+        textMesh.text = text;
+    }
+
     void Start()
     {
+        textPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/New Text.prefab");
+
         random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
         //random = new Unity.Mathematics.Random(2456235);
 
@@ -19,8 +29,8 @@ public class TreeManager : MonoBehaviour
         {
             //seed = random.NextInt(),
             //seed = 1234,
-            //seed = -587290213, // Broken worley mesh
-            seed = 368043453, // Worley mesh one very distant edge
+            seed = -587290213, // Broken worley mesh
+            //seed = 368043453, // Worley mesh one very distant edge
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
@@ -77,18 +87,18 @@ public class TreeManager : MonoBehaviour
                 TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
 
                 float colorFloat = cell.value;
-                float4 color = new float4(colorFloat/* + dist2Edge */, colorFloat, colorFloat, 1);
+                Color color = new Color(colorFloat/* + dist2Edge */, colorFloat, colorFloat, 1);
 
                 CreateCube(new float3(x, 0, z), color);
             } 
     }
 
-    public static GameObject CreateCube(float3 position, float4 c)
+    public static GameObject CreateCube(float3 position, Color color)
     {
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Quad);
         cube.transform.Translate(position);
         cube.transform.Rotate(new Vector3(90, 0, 0));
-        cube.GetComponent<MeshRenderer>().material.color = new Color(c.x, c.y, c.z, c.w);
+        cube.GetComponent<MeshRenderer>().material.color = color;
         return cube;
     }
 
