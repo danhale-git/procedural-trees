@@ -48,6 +48,18 @@ public class TreeManager : MonoBehaviour
         DebugWorley(20);
     }
 
+    void Update()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        RaycastHit hit;
+
+        if(Physics.Raycast(ray, out hit) && Input.GetMouseButtonDown(0))
+        {
+            Debug.Log(worley.GetCellData(hit.point, rootFrequency).index);
+        }
+    }
+
     void WorleyMeshTesst(int range)
     {
         for(int x = -range; x < range; x++)
