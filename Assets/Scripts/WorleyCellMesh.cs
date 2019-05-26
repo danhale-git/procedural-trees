@@ -66,9 +66,9 @@ public struct WorleyCellMesh
 	{
 		vertices = new NativeList<float3>(Allocator.Temp);
 
-		int2 debugIndex = new int2(-1,0);
+		int2 debugIndex = new int2(1,0);
 		
-
+		int safety = 0;//DEBUG
 		int currentIndex = 0;
 		while(currentIndex < edges.Count)
 		{
@@ -80,9 +80,12 @@ public struct WorleyCellMesh
 
 			int neighboursChecked = 0;
 			int nextIndex = currentIndex + 1;
-			
+
 			while(!rightIntersectionFound && neighboursChecked <= 4)
 			{
+				safety++;//DEBUG
+				if(safety>500) throw new System.Exception("WHILE LOOP");
+
 				nextIndex = WrapEdgeIndex(nextIndex);
 				
 				Edge nextEdge = edges[nextIndex];
@@ -103,7 +106,7 @@ public struct WorleyCellMesh
 				}
 				else
 				{
-					Debug.Log(edge.adjacentCell.index+" vertex found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
+					Debug.Log("found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
 					vertices.Add(rightIntersection);
 					currentIndex++;
 
@@ -170,6 +173,14 @@ public struct WorleyCellMesh
 		return point;
 	}
 
+	bool IsInCell(float3 intersection)
+	{
+		float3 testPosition = intersection + math.normalize(currentCell.position - intersection);
+		int2 cellIndex = worley.GetCellData(testPosition, TreeManager.rootFrequency).index;
+
+		return currentCell.index.Equals(cellIndex);;
+	}
+
 	bool IsBehindLine(float3 lineStart, float3 linePoint, float3 checkPoint)
 	{
 		float3 lineDirection = (math.normalize(linePoint - lineStart));
@@ -186,7 +197,7 @@ public struct WorleyCellMesh
 		//TODO: Maybe this can be done by calculating the circumcircle of both midpoints and the cell position? What's more efficient?
 	}
 
-	Circumcircle GetCircumcircle(float3 p0, float3 p1, float3 p2)
+	Circumcircle GetCircumcircle(float3 p0, float3 p1, float3 p2, Color color)
 	{
 		float dA, dB, dC, aux1, aux2, div;
 	
@@ -213,10 +224,10 @@ public struct WorleyCellMesh
 		circle.center = center;
 		circle.radius = math.sqrt((center.x - p0.x)*(center.x - p0.x) + (center.z - p0.z)*(center.z - p0.z));
 
-		Draw(circle.center, circle.center+ new float3(circle.radius,0,0), Color.black);
-		Draw(circle.center, circle.center+ new float3(-circle.radius,0,0), Color.black);
-		Draw(circle.center, circle.center+ new float3(0,0,circle.radius), Color.black);
-		Draw(circle.center, circle.center+ new float3(0,0,-circle.radius), Color.black);
+		Draw(circle.center, circle.center+ new float3(circle.radius,0,0), color);
+		Draw(circle.center, circle.center+ new float3(-circle.radius,0,0), color);
+		Draw(circle.center, circle.center+ new float3(0,0,circle.radius), color);
+		Draw(circle.center, circle.center+ new float3(0,0,-circle.radius), color);
 	
 		return circle;
 	}
