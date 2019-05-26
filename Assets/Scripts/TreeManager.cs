@@ -10,6 +10,8 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
+    WorleyCellMesh worleyMesh;
+
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
     {
@@ -29,8 +31,11 @@ public class TreeManager : MonoBehaviour
         {
             //seed = random.NextInt(),
             //seed = 1234,
-            seed = -587290213, // Broken worley mesh
-            //seed = 368043453, // Worley mesh one very distant edge
+            //seed = -836233661,//midpoint to the right of intersection!
+            seed = -587290213, // intersection match for separated cell -  Working
+            //seed = 368043453, // everything skipped
+            //seed = -271709800,// everything skipped
+            //seed = 312065459,//starting point invalid
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
@@ -56,7 +61,7 @@ public class TreeManager : MonoBehaviour
 
         if(Physics.Raycast(ray, out hit) && Input.GetMouseButtonDown(0))
         {
-            Debug.Log(worley.GetCellData(hit.point, rootFrequency).index);
+            Debug.Log(worleyMesh.OutsideCell(hit.point));
         }
     }
 
@@ -71,7 +76,7 @@ public class TreeManager : MonoBehaviour
     }
     void GenerateWorleyMesh(int2 index)
     {
-        WorleyCellMesh worleyMesh = new WorleyCellMesh();
+        worleyMesh = new WorleyCellMesh();
         worleyMesh.worley = this.worley;
         worleyMesh.index = index;
         worleyMesh.Execute();

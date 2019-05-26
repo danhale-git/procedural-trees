@@ -23,6 +23,8 @@ public struct WorleyCellMesh
 		AddVertices();
         DrawEdges();
 
+		//TestCirc();
+
         //RemoveSeparatedCells();
         //DrawLines();
     }
@@ -62,43 +64,55 @@ public struct WorleyCellMesh
         return edges;
 	}
 
+	void TestCirc()
+	{
+		vertices = new NativeList<float3>(Allocator.Temp);
+
+		int2 debugIndex = new int2(0,1);
+		
+		int currentIndex = 0;
+		while(currentIndex < edges.Count)
+		{
+			GetCircumcircle(
+				edges[currentIndex].adjacentCell.position,
+				edges[WrapEdgeIndex(currentIndex+1)].adjacentCell.position,
+				currentCell.position,
+				Color.black
+			);
+			currentIndex++;
+		}
+	}
+
 	void AddVertices()
 	{
 		vertices = new NativeList<float3>(Allocator.Temp);
 
-		int2 debugIndex = new int2(1,0);
+		int2 debugIndex = new int2(0,1);
 		
-		int safety = 0;//DEBUG
 		int currentIndex = 0;
 		while(currentIndex < edges.Count)
 		{
 			Edge edge = edges[currentIndex];
 			Debug.Log(edge.adjacentCell.index+" =============================");
 
-			float3 rightIntersection = float3.zero;
-			bool rightIntersectionFound = false;
-
 			int neighboursChecked = 0;
-			int nextIndex = currentIndex + 1;
+			int nextIndex = WrapEdgeIndex(currentIndex + 1);
 
-			while(!rightIntersectionFound && neighboursChecked <= 4)
+			while(neighboursChecked <= 4)
 			{
-				safety++;//DEBUG
-				if(safety>500) throw new System.Exception("WHILE LOOP");
-
-				nextIndex = WrapEdgeIndex(nextIndex);
-				
 				Edge nextEdge = edges[nextIndex];
-				rightIntersection = GetIntersectionPointCoordinates(edge.midPoint, edge.right, nextEdge.midPoint, nextEdge.left, out rightIntersectionFound);
+				bool rightIntersectionFound;
+				float3 rightIntersection = GetIntersectionPointCoordinates(edge.midPoint, edge.right, nextEdge.midPoint, nextEdge.left, out rightIntersectionFound);
 				
 				neighboursChecked++;
 
-				if(!rightIntersectionFound)
+				if(!rightIntersectionFound || OutsideCell(rightIntersection))
 				{
-					Debug.Log(nextEdge.adjacentCell.index+" skipped");
 					currentIndex++;
 					nextIndex = WrapEdgeIndex(nextIndex+1);
 
+					//DEBUG
+					Debug.Log(nextEdge.adjacentCell.index+" skipped");
 					if(edge.adjacentCell.index.Equals(debugIndex))
 					{
 						TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.red);
@@ -106,15 +120,19 @@ public struct WorleyCellMesh
 				}
 				else
 				{
-					Debug.Log("found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
 					vertices.Add(rightIntersection);
 					currentIndex++;
 
+					//DEBUG
+					Debug.Log("found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
 					if(edge.adjacentCell.index.Equals(debugIndex))
 					{
+						Draw(currentCell.position, edge.midPoint, Color.blue);
 						TreeManager.CreateCube(edge.adjacentCell.position+ new float3(0,1,0), Color.white);
 						TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.green);
 					}
+
+					break;
 				}
 			}
 		}
@@ -173,12 +191,14 @@ public struct WorleyCellMesh
 		return point;
 	}
 
-	bool IsInCell(float3 intersection)
+	public bool OutsideCell(float3 intersection)
 	{
 		float3 testPosition = intersection + math.normalize(currentCell.position - intersection);
 		int2 cellIndex = worley.GetCellData(testPosition, TreeManager.rootFrequency).index;
 
-		return currentCell.index.Equals(cellIndex);;
+		Draw(testPosition, currentCell.position, Color.green);
+
+		return !currentCell.index.Equals(cellIndex);
 	}
 
 	bool IsBehindLine(float3 lineStart, float3 linePoint, float3 checkPoint)
