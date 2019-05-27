@@ -10,7 +10,7 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
-    WorleyCellMesh worleyMesh;
+    //WorleyCellMesh worleyMesh;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
@@ -32,7 +32,7 @@ public class TreeManager : MonoBehaviour
             //seed = random.NextInt(),
             //seed = 1234,
             //seed = -836233661,//midpoint to the right of intersection!
-            seed = -587290213, // intersection match for separated cell -  Working
+            seed = -587290213, // intersection match for separated cell 
             //seed = 368043453, // everything skipped
             //seed = -271709800,// everything skipped
             //seed = 312065459,//starting point invalid
@@ -47,7 +47,8 @@ public class TreeManager : MonoBehaviour
         //GenerateTree(int2.zero);
 
         //WorleyMeshTesst(1);
-        GenerateWorleyMesh(int2.zero); 
+        //GenerateWorleyMesh(int2.zero); 
+        //GenerateWorleyMesh(new int2(-1,1)); 
         
 
         DebugWorley(20);
@@ -61,14 +62,23 @@ public class TreeManager : MonoBehaviour
 
         if(Physics.Raycast(ray, out hit) && Input.GetMouseButtonDown(0))
         {
-            Debug.Log(worleyMesh.OutsideCell(hit.point));
         }
     }
 
-    void WorleyMeshTesst(int range)
+    void OnDrawGizmos()
     {
-        for(int x = -range; x < range; x++)
-            for(int z = -range; z < range; z++)
+        /*if(worleyMesh.circles == null) return;
+
+        foreach(WorleyCellMesh.Circumcircle circle in worleyMesh.circles)
+        {
+            Gizmos.DrawWireSphere(circle.center, circle.radius);
+        } */
+    }
+
+    /*void WorleyMeshTesst(int range)
+    {
+        for(int x = -range; x < range+1; x++)
+            for(int z = -range; z < range+1; z++)
             {
                 int2 index = new int2(x,z);
                 GenerateWorleyMesh(index);
@@ -80,7 +90,7 @@ public class TreeManager : MonoBehaviour
         worleyMesh.worley = this.worley;
         worleyMesh.index = index;
         worleyMesh.Execute();
-    }
+    } */
 
     void CreateTrees(int range)
     {

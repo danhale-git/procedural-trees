@@ -12,18 +12,26 @@ public struct WorleyCellMesh
     List<Edge> edges;
     TreeWorleyNoise.CellData currentCell;
 
+	public List<Circumcircle> circles;
+
     NativeList<float3> vertices;
+
+	float2 frequency;
 
     public void Execute()
     {
+		frequency = TreeManager.rootFrequency;
+		circles = new List<Circumcircle>();
+
         currentCell = worley.GetCellData(index, TreeManager.rootFrequency);
 
         GetEdges(currentCell.index, TreeManager.rootFrequency);
 
 		AddVertices();
-        DrawEdges();
 
-		//TestCirc();
+		TestCirc();
+
+        DrawEdges();
 
         //RemoveSeparatedCells();
         //DrawLines();
@@ -43,11 +51,18 @@ public struct WorleyCellMesh
 			float3 offset = adjacentCell.position - currentCell.position;
 
             this.midPoint = currentCell.position + (offset * 0.5f);
-            this.edgeDirection = math.cross(offset, new float3(0, 1, 0));
+            this.edgeDirection = math.normalize(math.cross(offset, new float3(0, 1, 0)));
             this.adjacentCell = adjacentCell;
             this.left = midPoint + edgeDirection;
             this.right = midPoint - edgeDirection; 
         }
+	}
+
+	struct Intersection
+	{
+		public Edge edge;
+		public float3 rightIntersection;
+		public float3 leftIntersection;
 	}
 
     List<Edge> GetEdges(int2 cellIndex, float2 frequency)
@@ -66,37 +81,89 @@ public struct WorleyCellMesh
 
 	void TestCirc()
 	{
-		vertices = new NativeList<float3>(Allocator.Temp);
-
 		int2 debugIndex = new int2(0,1);
+
+		for(int i = 0; i < edges.Count; i++)
+		{
+			Edge edge = edges[i];
+			Edge previousEdge = edges[WrapEdgeIndex(i - 1)];
+			Edge nextEdge = edges[WrapEdgeIndex(i + 1)];
+
+			bool debug = edge.adjacentCell.index.Equals(new int2(-1,0));
+
+			if(debug)
+			{
+				/*for(int e = 0; e < edges.Count; e++)
+				{
+					bool rightFound;
+					float3 rightIntersection = GetIntersectionPointCoordinates(edge.midPoint, edge.right, edges[e].midPoint, edges[e].left, out rightFound);
+
+					if(!rightFound) continue;
+
+					float colorVal = edges[e].adjacentCell.value;
+
+					Circumcircle circle;
+
+					GetCircumcircle(
+						edge.adjacentCell.position,
+						edges[e].adjacentCell.position,
+						currentCell.position,
+						new Color(colorVal, colorVal, colorVal),
+						out circle
+					);
+
+					
+				}  */
+
+				/*Edge nextEdgeButOne = edges[WrapEdgeIndex(i + 2)];
+
+				
+				if(rightFound) Draw(rightIntersection, currentCell.position, Color.green);
+
+				float colorVal = nextEdgeButOne.adjacentCell.value;
+				Circumcircle circle;
+				GetCircumcircle(
+					edge.adjacentCell.position,
+					nextEdgeButOne.adjacentCell.position,
+					currentCell.position,
+					new Color(colorVal, colorVal, colorVal),
+					out circle
+				); */
+
+			}
+		}
+
+		/*if(!foundStart)
+			throw new System.Exception("No eligible starting edge!");
 		
-		int currentIndex = 0;
+		int currentIndex = startIndex;
+		int checkedCount = 0;
 		while(currentIndex < edges.Count)
 		{
-			GetCircumcircle(
-				edges[currentIndex].adjacentCell.position,
-				edges[WrapEdgeIndex(currentIndex+1)].adjacentCell.position,
-				currentCell.position,
-				Color.black
-			);
+			Edge edge = edges[currentIndex];
+			Draw(edge.left, edge.right, Color.green);
 			currentIndex++;
-		}
+		} */
 	}
 
 	void AddVertices()
 	{
 		vertices = new NativeList<float3>(Allocator.Temp);
 
-		int2 debugIndex = new int2(0,1);
 		
 		int currentIndex = 0;
 		while(currentIndex < edges.Count)
 		{
 			Edge edge = edges[currentIndex];
 			Debug.Log(edge.adjacentCell.index+" =============================");
+			bool DEBUG = edge.adjacentCell.index.Equals(new int2(-1,0));
 
 			int neighboursChecked = 0;
 			int nextIndex = WrapEdgeIndex(currentIndex + 1);
+
+			bool eligibleIntersectionFound = false;
+
+			List<Intersection> intersections = new List<Intersection>();
 
 			while(neighboursChecked <= 4)
 			{
@@ -106,14 +173,14 @@ public struct WorleyCellMesh
 				
 				neighboursChecked++;
 
-				if(!rightIntersectionFound || OutsideCell(rightIntersection))
+				eligibleIntersectionFound = rightIntersectionFound;//
+
+				if(!eligibleIntersectionFound)
 				{
-					currentIndex++;
 					nextIndex = WrapEdgeIndex(nextIndex+1);
 
-					//DEBUG
 					Debug.Log(nextEdge.adjacentCell.index+" skipped");
-					if(edge.adjacentCell.index.Equals(debugIndex))
+					if(DEBUG)
 					{
 						TreeManager.CreateCube(nextEdge.adjacentCell.position+ new float3(0,1,0), Color.red);
 					}
@@ -121,11 +188,12 @@ public struct WorleyCellMesh
 				else
 				{
 					vertices.Add(rightIntersection);
-					currentIndex++;
 
-					//DEBUG
+					//Debug.Log("Intersection: "+worley.DistanceToEdge(rightIntersection, currentCell.index, nextEdge.adjacentCell.index));
+					//Debug.Log("Next Midpoint: "+worley.DistanceToEdge(nextEdge.midPoint, currentCell.index, nextEdge.adjacentCell.index));
+
 					Debug.Log("found "+  nextEdge.adjacentCell.index+" after "+neighboursChecked);
-					if(edge.adjacentCell.index.Equals(debugIndex))
+					if(DEBUG)
 					{
 						Draw(currentCell.position, edge.midPoint, Color.blue);
 						TreeManager.CreateCube(edge.adjacentCell.position+ new float3(0,1,0), Color.white);
@@ -134,14 +202,26 @@ public struct WorleyCellMesh
 
 					break;
 				}
+
+			}
+
+			if(eligibleIntersectionFound)
+					currentIndex += neighboursChecked;
+			else
+			{
+				Debug.Log("nothing found for "+edge.adjacentCell.index);
+				currentIndex += 1; 
 			}
 		}
-	}
+	} 
 
 	int WrapEdgeIndex(int index)
 	{
 		while(index >= edges.Count)
 			index -= edges.Count;
+
+		while(index < 0)
+			index += edges.Count;
 
 		return index;
 	}
@@ -217,7 +297,7 @@ public struct WorleyCellMesh
 		//TODO: Maybe this can be done by calculating the circumcircle of both midpoints and the cell position? What's more efficient?
 	}
 
-	Circumcircle GetCircumcircle(float3 p0, float3 p1, float3 p2, Color color)
+	bool GetCircumcircle(float3 p0, float3 p1, float3 p2, Color color, out Circumcircle circle)
 	{
 		float dA, dB, dC, aux1, aux2, div;
 	
@@ -229,11 +309,11 @@ public struct WorleyCellMesh
 		aux2 = -(dA*(p2.x - p1.x) + dB*(p0.x - p2.x) + dC*(p1.x - p0.x));
 		div = (2*(p0.x*(p2.z - p1.z) + p1.x*(p0.z-p2.z) + p2.x*(p1.z - p0.z)));
 	
-		if(div == 0){ 
-			throw new System.Exception("Circle could not be found");
-		}
+		circle = new Circumcircle();
 
-		Circumcircle circle = new Circumcircle();
+		if(div == 0){ 
+			return false;
+		}
 
 		float3 center = new float3(
 			aux1/div,
@@ -244,15 +324,17 @@ public struct WorleyCellMesh
 		circle.center = center;
 		circle.radius = math.sqrt((center.x - p0.x)*(center.x - p0.x) + (center.z - p0.z)*(center.z - p0.z));
 
-		Draw(circle.center, circle.center+ new float3(circle.radius,0,0), color);
+		/*Draw(circle.center, circle.center+ new float3(circle.radius,0,0), color);
 		Draw(circle.center, circle.center+ new float3(-circle.radius,0,0), color);
 		Draw(circle.center, circle.center+ new float3(0,0,circle.radius), color);
-		Draw(circle.center, circle.center+ new float3(0,0,-circle.radius), color);
+		Draw(circle.center, circle.center+ new float3(0,0,-circle.radius), color); */
+
+		circles.Add(circle);
 	
-		return circle;
+		return true;
 	}
 
-	struct Circumcircle
+	public struct Circumcircle
 	{
 		public float3 center;
 		public float radius;
