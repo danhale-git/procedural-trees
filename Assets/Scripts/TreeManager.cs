@@ -10,7 +10,7 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
-    WorleyCellMesh worleyMesh;
+    BowyerWatsonTriangulation bowyerWatson;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
@@ -38,9 +38,7 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
-        var bw = new BowyerWatsonTriangulation();
-
-        bw.TestClockwise();
+        bowyerWatson = new BowyerWatsonTriangulation();
     }
 
     void Update()
@@ -51,7 +49,13 @@ public class TreeManager : MonoBehaviour
 
         if(Physics.Raycast(ray, out hit) && Input.GetMouseButtonDown(0))
         {
+            float2 point = new float2(hit.point.x, hit.point.z);
+
+            Debug.Log(bowyerWatson.GetAngle(float2.zero, point));
         }
+
+        
+
     }
 
     void OnDrawGizmos()
@@ -63,23 +67,6 @@ public class TreeManager : MonoBehaviour
             Gizmos.DrawWireSphere(circle.center, circle.radius);
         } */
     }
-
-    void WorleyMeshTesst(int range)
-    {
-        for(int x = -range; x < range+1; x++)
-            for(int z = -range; z < range+1; z++)
-            {
-                int2 index = new int2(x,z);
-                GenerateWorleyMesh(index);
-            } 
-    }
-    void GenerateWorleyMesh(int2 index)
-    {
-        worleyMesh = new WorleyCellMesh();
-        worleyMesh.worley = this.worley;
-        worleyMesh.index = index;
-        worleyMesh.Execute();
-    } 
 
     void CreateTrees(int range)
     {

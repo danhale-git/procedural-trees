@@ -20,11 +20,11 @@ public struct BowyerWatsonTriangulation
         readonly float2 a, b, c;
     }
 
-    float GetAngle(float2 point, float2 vertex)
+    public float GetAngle(float2 point, float2 vertex)
     {
         float2 vertexDirection = math.normalize(vertex - point);
         float2 up = new float2(0, 1);
-        return SignedAngle(up, vertexDirection);
+        return SignedAngle(vertexDirection, up);
     }
 
     const float kEpsilonNormalSqrt = 1e-15F;
@@ -45,7 +45,8 @@ public struct BowyerWatsonTriangulation
     {
         float unsigned_angle = Angle(from, to);
         float sign = math.sign(from.x * to.y - from.y * to.x);
-        return unsigned_angle * sign;
+
+        return sign < 0 ? 360 - unsigned_angle : unsigned_angle;
     }
 
     float SquareMagnitude(float2 v)
