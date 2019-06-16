@@ -10,7 +10,7 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     TreeWorleyNoise worley;
 
-    //WorleyCellMesh worleyMesh;
+    WorleyCellMesh worleyMesh;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
@@ -29,13 +29,7 @@ public class TreeManager : MonoBehaviour
 
         worley = new TreeWorleyNoise()
         {
-            //seed = random.NextInt(),
-            //seed = 1234,
-            //seed = -836233661,//midpoint to the right of intersection!
-            seed = -587290213, // intersection match for separated cell 
-            //seed = 368043453, // everything skipped
-            //seed = -271709800,// everything skipped
-            //seed = 312065459,//starting point invalid
+            seed = random.NextInt(),
             perterbAmp = 0,
             cellularJitter = 0.4f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
@@ -44,14 +38,9 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
-        //GenerateTree(int2.zero);
+        var bw = new BowyerWatsonTriangulation();
 
-        //WorleyMeshTesst(1);
-        //GenerateWorleyMesh(int2.zero); 
-        //GenerateWorleyMesh(new int2(-1,1)); 
-        
-
-        DebugWorley(20);
+        bw.TestClockwise();
     }
 
     void Update()
@@ -75,7 +64,7 @@ public class TreeManager : MonoBehaviour
         } */
     }
 
-    /*void WorleyMeshTesst(int range)
+    void WorleyMeshTesst(int range)
     {
         for(int x = -range; x < range+1; x++)
             for(int z = -range; z < range+1; z++)
@@ -90,7 +79,7 @@ public class TreeManager : MonoBehaviour
         worleyMesh.worley = this.worley;
         worleyMesh.index = index;
         worleyMesh.Execute();
-    } */
+    } 
 
     void CreateTrees(int range)
     {
