@@ -1,60 +1,15 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
-using System;
 
 public struct BowyerWatsonTriangulation
 {
 
-    NativeArray<float2> pointsToBeTriangulated; 
+    public NativeList<float2> points; 
+
     NativeArray<Triangle> incompleteTriangles;
     NativeArray<Triangle> completeTriangles;
 
     NativeArray<Edge> edges;
-
-    public struct Vertex : IComparable<Vertex>
-    {
-        const float rad2Deg = 57.29578f;
-        
-        readonly float2 v;
-
-        public Vertex(float2 v)
-        {
-            this.v = v;
-        }
-
-        public int CompareTo(Vertex other)
-        {
-            return 0;
-        }
-
-        public float GetAngle(float2 point)
-        {
-            float2 vertexDirection = math.normalize(v - point);
-            float2 up = new float2(0, 1);
-            return SignedAngle(vertexDirection, up);
-        }
-
-        float Angle(float2 from, float2 up)
-        {
-            float denominator = (float)math.sqrt(Magnitude(from) * Magnitude(up));
-
-            float dot = math.clamp(math.dot(from, up) / denominator, -1F, 1F);
-            return ((float)math.acos(dot)) * rad2Deg;
-        }
-
-        float Magnitude(float2 v)
-        {
-            return v.x * v.x + v.y * v.y;
-        }
-
-        float SignedAngle(float2 from, float2 to)
-        {
-            float unsigned_angle = Angle(from, to);
-            float sign = math.sign(from.x * to.y - from.y * to.x);
-
-            return sign < 0 ? 360 - unsigned_angle : unsigned_angle;
-        }
-    }
 
     struct Edge
     {
@@ -63,7 +18,113 @@ public struct BowyerWatsonTriangulation
 
     struct Triangle
     {
-        readonly float2 a, b, c;
+        public Triangle(float2 a, float2 b, float2 c)
+        {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+        public readonly float2 a, b, c;
     }
 
+    public void Test()
+    {
+        DrawPoints();
+        SuperTriangle();
+
+    }
+    void DrawPoints()
+    {
+        for(int i = 0; i < points.Length; i++)
+        {
+            TreeManager.CreateCube(points[i], UnityEngine.Color.black);
+        }
+
+        TreeManager.CreateCube(CenterPoint(), UnityEngine.Color.red);
+    }
+
+    Triangle SuperTriangle()
+    {
+        float2 center = CenterPoint();
+        float radius = IncircleRadius(center);
+
+        float2 topRight = center + new float2(radius, radius);
+        float2 topLeft = center + new float2(-radius, radius);
+        float2 bottom = center + new float2(0, -radius);
+
+        float2 topIntersect = GetIntersectionPointCoordinates(
+            topRight,
+            topRight + new float2(-1, 1),
+            topLeft,
+            topLeft + new float2(1, 1)
+        );
+
+        float2 leftIntersect = GetIntersectionPointCoordinates(
+            topLeft,
+            topLeft + new float2(-1, -1),
+            bottom,
+            bottom + new float2(-1, 0)
+        );
+
+        float2 rightIntersect = GetIntersectionPointCoordinates(
+            topRight,
+            topRight + new float2(1, -1),
+            bottom,
+            bottom + new float2(1, 0)
+        );
+
+        Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
+        DrawTriangle(triangle, UnityEngine.Color.red);
+
+        return triangle;
+    }
+
+    public float2 CenterPoint()
+    {
+        float2 center = float2.zero;
+        for(int i = 0; i < points.Length; i++)
+            center += points[i];
+
+        return center /= points.Length;
+    }
+    public float IncircleRadius(float2 center)
+    {
+        float largestDistance = 0;
+        for(int i = 0; i < points.Length; i++)
+        {
+            float distance = math.distance(points[i], center);
+            if(distance > largestDistance)
+                largestDistance = distance;
+        }
+        
+        return largestDistance + 1;
+    }
+
+    public float2 GetIntersectionPointCoordinates(float2 A1, float2 A2, float2 B1, float2 B2)
+	{
+		float tmp = (B2.x - B1.x) * (A2.y - A1.y) - (B2.y - B1.y) * (A2.x - A1.x);
+		float mu = ((A1.x - B1.x) * (A2.y - A1.y) - (A1.y - B1.y) * (A2.x - A1.x)) / tmp;
+	
+		float2 point = new float2(
+			B1.x + (B2.x - B1.x) * mu,
+			B1.y + (B2.y - B1.y) * mu
+		);
+
+		return point;
+	}
+    
+    //DEBUG
+    void DrawTriangle(Triangle triangle, UnityEngine.Color color)
+    {
+        DrawLineFloat2(triangle.a, triangle.b, color);
+        DrawLineFloat2(triangle.b, triangle.c, color);
+        DrawLineFloat2(triangle.c, triangle.a, color);
+    }
+    void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
+    {
+        float3 a3 = new float3(a.x, 0, a.y);
+        float3 b3 = new float3(b.x, 0, b.y);
+        UnityEngine.Debug.DrawLine(a3, b3, color, 100);
+    }
+    //DEBUG
 }

@@ -38,7 +38,24 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
+        TestBW();
+    }
+
+    void TestBW()
+    {
+        float2 min = new float2(-10, -10);
+        float2 max = new float2(10, 10);
+
         bowyerWatson = new BowyerWatsonTriangulation();
+        bowyerWatson.points = new NativeList<float2>(Allocator.Persistent);
+
+        for(int i = 0; i < 4; i++)
+            bowyerWatson.points.Add(random.NextFloat2(min, max));
+
+        bowyerWatson.Test();
+
+        bowyerWatson.points.Dispose();
+
     }
 
     void Update()
@@ -50,11 +67,7 @@ public class TreeManager : MonoBehaviour
         if(Physics.Raycast(ray, out hit) && Input.GetMouseButtonDown(0))
         {
             float2 point = new float2(hit.point.x, hit.point.z);
-
-            Debug.Log(new BowyerWatsonTriangulation.Vertex(point).GetAngle(float2.zero));
         }
-
-        
 
     }
 
@@ -100,6 +113,14 @@ public class TreeManager : MonoBehaviour
     {
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Quad);
         cube.transform.Translate(position);
+        cube.transform.Rotate(new Vector3(90, 0, 0));
+        cube.GetComponent<MeshRenderer>().material.color = color;
+        return cube;
+    }
+    public static GameObject CreateCube(float2 position, Color color)
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        cube.transform.Translate(new float3(position.x, 0, position.y));
         cube.transform.Rotate(new Vector3(90, 0, 0));
         cube.GetComponent<MeshRenderer>().material.color = color;
         return cube;
