@@ -51,7 +51,7 @@ public class TreeManager : MonoBehaviour
         {
             float2 point = new float2(hit.point.x, hit.point.z);
 
-            Debug.Log(bowyerWatson.GetAngle(float2.zero, point));
+            Debug.Log(new BowyerWatsonTriangulation.Vertex(point).GetAngle(float2.zero));
         }
 
         
