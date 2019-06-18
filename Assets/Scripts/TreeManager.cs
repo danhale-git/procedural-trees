@@ -52,10 +52,9 @@ public class TreeManager : MonoBehaviour
         for(int i = 0; i < 4; i++)
             bowyerWatson.points.Add(random.NextFloat2(min, max));
 
-        bowyerWatson.Test();
+        bowyerWatson.Initialise();
 
-        bowyerWatson.points.Dispose();
-
+        //bowyerWatson.Dispose();
     }
 
     void Update()
