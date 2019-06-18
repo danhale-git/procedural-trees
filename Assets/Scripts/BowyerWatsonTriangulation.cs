@@ -81,46 +81,37 @@ public struct BowyerWatsonTriangulation
 
     public void Triangulate()
     {
-        NativeList<int> removeTrianglesAt = new NativeList<int>(Allocator.Persistent);
+        if(currentPoint == points.Length-1)
+        {
+            incompleteTriangles.Dispose();
+            points.Dispose();
+            return;
+        }
 
         NativeArray<Triangle> incompleteTrianglesCopy = new NativeArray<Triangle>(incompleteTriangles.Length, Allocator.Persistent);
-        incompleteTriangles.CopyFrom(incompleteTriangles.ToArray());
-
+        incompleteTrianglesCopy.CopyFrom(incompleteTriangles.ToArray());
+        edges = new NativeList<Edge>(Allocator.Temp);
+        incompleteTriangles.Clear();
         
         float2 point = points[currentPoint];
-        DrawPoint(point, UnityEngine.Color.blue);
         currentPoint++;
 
-        for(int i = 0; i < incompleteTriangles.Length; i++)
+        for(int i = 0; i < incompleteTrianglesCopy.Length; i++)
         {
-            Triangle triangle = incompleteTriangles[i];
+            Triangle triangle = incompleteTrianglesCopy[i];
             float distanceFromCircumcircle = math.distance(point, triangle.circumcircle.center);
             bool pointIsInCircumcircle = distanceFromCircumcircle < triangle.circumcircle.radius;
 
             if(pointIsInCircumcircle)
             {
-                removeTrianglesAt.Add(i);
+                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].a,incompleteTrianglesCopy[i].b));
+                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].b,incompleteTrianglesCopy[i].c));
+                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].c,incompleteTrianglesCopy[i].a));
             }
             else
             {
-
+                incompleteTriangles.Add(incompleteTrianglesCopy[i]);
             }
-        }
-
-        edges = new NativeList<Edge>(Allocator.Temp);
-
-        for(int i = 0; i < removeTrianglesAt.Length; i++)
-        {
-            int index = removeTrianglesAt[i];
-
-            AddOrRemoveEdge(new Edge(incompleteTriangles[index].a,incompleteTriangles[index].b));
-            AddOrRemoveEdge(new Edge(incompleteTriangles[index].b,incompleteTriangles[index].c));
-            AddOrRemoveEdge(new Edge(incompleteTriangles[index].c,incompleteTriangles[index].a));
-        }
-
-        for(int i = 0; i < removeTrianglesAt.Length; i++)
-        {
-            incompleteTriangles.RemoveAtSwapBack(removeTrianglesAt[i]);
         }
 
         for(int i = 0; i < edges.Length; i++)
@@ -133,11 +124,12 @@ public struct BowyerWatsonTriangulation
 
             incompleteTriangles.Add(triangle);
 
-            DrawTriangle(triangle, UnityEngine.Color.green);
+            DrawTriangle(triangle, new UnityEngine.Color(0, 1, 0, 0.5f));
         }
+        DrawPoint(point, UnityEngine.Color.blue);
 
         edges.Dispose();
-        removeTrianglesAt.Dispose();
+        incompleteTrianglesCopy.Dispose();
     }
 
     void AddOrRemoveEdge(Edge edge)
@@ -157,6 +149,7 @@ public struct BowyerWatsonTriangulation
         for(int i = 0; i < edges.Length; i++)
             if(check.Equals(edges[i]))
             {
+                DrawLineFloat2(check.a, check.b, new UnityEngine.Color(1, 0, 0, 0.5f));
                 otherIndex = i;
                 return true;
             }

@@ -49,7 +49,7 @@ public class TreeManager : MonoBehaviour
         bowyerWatson = new BowyerWatsonTriangulation();
         bowyerWatson.points = new NativeList<float2>(Allocator.Persistent);
 
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < 7; i++)
             bowyerWatson.points.Add(random.NextFloat2(min, max));
 
         bowyerWatson.Initialise();
