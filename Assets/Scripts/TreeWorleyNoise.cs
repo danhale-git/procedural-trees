@@ -2,7 +2,7 @@
 using Unity.Collections;
 using UnityEngine;
 
-public struct TreeWorleyNoise
+public struct WorleyNoise
 {
 	public enum DistanceFunction {Natural, Manhatten, Euclidean}
 	public enum CellularReturnType {Distance2, Distance2Add, Distance2Sub, Distance2Mul, Distance2Div}

@@ -7,7 +7,7 @@ using Unity.Collections;
 public struct GenerateTreeMeshJob
 {
     public int2 rootIndex;
-    public TreeWorleyNoise rootWorley;
+    public WorleyNoise rootWorley;
     public float rootFrequency;
 
     public float crownHeight;
@@ -23,7 +23,7 @@ public struct GenerateTreeMeshJob
     public struct Node
     {
         public float frequency;
-        public TreeWorleyNoise.CellData cell;
+        public WorleyNoise.CellData cell;
         public float height;
 
         public float3 Position()
@@ -50,7 +50,7 @@ public struct GenerateTreeMeshJob
 
     void Branch(Node root)
     {
-        TreeWorleyNoise branchWorley = rootWorley;
+        WorleyNoise branchWorley = rootWorley;
         branchWorley.SetSeed(random.NextInt());
 
         crowns = GetChildren(root, ref branchWorley, 3);
@@ -76,15 +76,15 @@ public struct GenerateTreeMeshJob
         }
     }
 
-    NativeList<Node> GetChildren(Node parent, ref TreeWorleyNoise worley, int multiplier)
+    NativeList<Node> GetChildren(Node parent, ref WorleyNoise worley, int multiplier)
     {
         float frequency = parent.frequency * multiplier;
 
         NativeList<Node> children = new NativeList<Node>(Allocator.Temp);
-        NativeQueue<TreeWorleyNoise.CellData> toCheck = new NativeQueue<TreeWorleyNoise.CellData>(Allocator.Temp);
+        NativeQueue<WorleyNoise.CellData> toCheck = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
 
         //  cell at position of parent
-        TreeWorleyNoise.CellData initialCell = worley.GetCellData(parent.cell.position, frequency);
+        WorleyNoise.CellData initialCell = worley.GetCellData(parent.cell.position, frequency);
         toCheck.Enqueue(initialCell);
 
         NativeList<int2> checkedIndices = new NativeList<int2>(Allocator.Temp);
@@ -92,12 +92,12 @@ public struct GenerateTreeMeshJob
 
         while(toCheck.Count > 0)
         {
-            TreeWorleyNoise.CellData cell = toCheck.Dequeue();
+            WorleyNoise.CellData cell = toCheck.Dequeue();
 
             float distanceToEdgeParent;
          
-            TreeWorleyNoise.CellData cellPointInParent = worley.GetCellData(cell.position, parent.frequency, out distanceToEdgeParent);
-            TreeWorleyNoise.CellData cellPointInRoot = rootWorley.GetCellData(cell.position, rootFrequency);
+            WorleyNoise.CellData cellPointInParent = worley.GetCellData(cell.position, parent.frequency, out distanceToEdgeParent);
+            WorleyNoise.CellData cellPointInRoot = rootWorley.GetCellData(cell.position, rootFrequency);
 
             float height = parent.height;
             height += (distanceToEdgeParent - 0.2f)*crownHeight;
@@ -124,7 +124,7 @@ public struct GenerateTreeMeshJob
                     if(checkedIndices.Contains(index))
                         continue;
 
-                    TreeWorleyNoise.CellData cellToCheck = worley.GetCellData(cell.index + index, frequency);
+                    WorleyNoise.CellData cellToCheck = worley.GetCellData(cell.index + index, frequency);
                     toCheck.Enqueue(cellToCheck);
                     checkedIndices.Add(index);
                 }
@@ -136,7 +136,7 @@ public struct GenerateTreeMeshJob
         return children;
     }
 
-    bool PointIsInParent(TreeWorleyNoise.CellData point, int2 index)
+    bool PointIsInParent(WorleyNoise.CellData point, int2 index)
     {
         if(!point.index.Equals(index))
             return false;

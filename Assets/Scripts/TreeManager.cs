@@ -8,7 +8,7 @@ public class TreeManager : MonoBehaviour
 {
     public const float rootFrequency = 0.1f;
     Unity.Mathematics.Random random;
-    TreeWorleyNoise worley;
+    WorleyNoise worley;
 
     BowyerWatsonTriangulation bowyerWatson;
 
@@ -27,13 +27,13 @@ public class TreeManager : MonoBehaviour
         random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
         //random = new Unity.Mathematics.Random(2456235);
 
-        worley = new TreeWorleyNoise()
+        worley = new WorleyNoise()
         {
             seed = random.NextInt(),
             perterbAmp = 0,
             cellularJitter = 0.3f,
-            distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
-            cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
+            distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
+            cellularReturnType = WorleyNoise.CellularReturnType.Distance2
         };
 
         Debug.Log("Seed: "+worley.seed);
@@ -108,7 +108,7 @@ public class TreeManager : MonoBehaviour
                 float zf = 0.1f * ( (float)math.abs(z) / range ); */
 
                 float dist2Edge;
-                TreeWorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
+                WorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
 
                 float colorFloat = cell.value;
                 Color color = new Color(colorFloat/* + dist2Edge */, colorFloat, colorFloat, 1);

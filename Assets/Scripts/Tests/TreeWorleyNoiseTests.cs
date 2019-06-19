@@ -18,10 +18,10 @@ namespace Tests
         [Test]
         public void GetWorleyNoiseNoAdjacent()
         {
-            TreeWorleyNoise.CellData adjacentPlaceholder;
+            WorleyNoise.CellData adjacentPlaceholder;
             float dist2EdgePlaceholder;
 
-            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+            WorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 
             bool somethingWasGenerated = cell.value != 0;
             bool adjacentNotGenerated = adjacentPlaceholder.value == 0;
@@ -32,10 +32,10 @@ namespace Tests
         [Test]
         public void GetWorleyNoiseNoDistance()
         {
-            TreeWorleyNoise.CellData adjacentPlaceholder;
+            WorleyNoise.CellData adjacentPlaceholder;
             float dist2EdgePlaceholder;
 
-            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
+            WorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 
             bool somethingWasGenerated = cell.value != 0;
             bool distanceNotGenerated = dist2EdgePlaceholder == 999999;
@@ -46,10 +46,10 @@ namespace Tests
         [Test]
         public void GetWorleyDistanceNotZero()
         {
-            TreeWorleyNoise.CellData adjacentPlaceholder;
+            WorleyNoise.CellData adjacentPlaceholder;
             float dist2Edge;
 
-            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
+            WorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
 
             bool somethingWasGenerated = cell.value != 0;
             bool distanceNotZero = dist2Edge != 0;
@@ -60,10 +60,10 @@ namespace Tests
         [Test]
         public void GetWorleyDistanceNotNines()
         {
-            TreeWorleyNoise.CellData adjacentPlaceholder;
+            WorleyNoise.CellData adjacentPlaceholder;
             float dist2Edge;
 
-            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
+            WorleyNoise.CellData cell = GetWorleyDataHelper(out adjacentPlaceholder, out dist2Edge, false, true);
 
             bool somethingWasGenerated = cell.value != 0;
             bool distanceNotNines = dist2Edge != 999999;
@@ -74,19 +74,19 @@ namespace Tests
         [Test]
         public void AdjacentCellIsDifferent()
         {
-            TreeWorleyNoise.CellData adjacent;
+            WorleyNoise.CellData adjacent;
             float dist2EdgePlaceholder;
 
-            TreeWorleyNoise.CellData cell = GetWorleyDataHelper(out adjacent, out dist2EdgePlaceholder, true, false);
+            WorleyNoise.CellData cell = GetWorleyDataHelper(out adjacent, out dist2EdgePlaceholder, true, false);
 
             bool notZero = adjacent.value != 0;
             bool different = !adjacent.index.Equals(cell.index);
             Assert.IsTrue(notZero && different, "adjacent is zero: "+notZero);
         }
 
-        TreeWorleyNoise.CellData GetWorleyDataHelper(out TreeWorleyNoise.CellData adjacentPlaceholder, out float dist2EdgePlaceholder, bool getAdjacent, bool getDistance)
+        WorleyNoise.CellData GetWorleyDataHelper(out WorleyNoise.CellData adjacentPlaceholder, out float dist2EdgePlaceholder, bool getAdjacent, bool getDistance)
         {
-            TreeWorleyNoise worley = GetWorleyGenerator();
+            WorleyNoise worley = GetWorleyGenerator();
             float3 randomPosition = Random().NextFloat3();
 
             return worley.GetWorleyData(
@@ -131,27 +131,27 @@ namespace Tests
             Assert.IsTrue(match);
         }
 
-        TreeWorleyNoise GetWorleyGenerator()
+        WorleyNoise GetWorleyGenerator()
         {
-            return new TreeWorleyNoise()
+            return new WorleyNoise()
             {
                 seed = Random().NextInt(),
                 perterbAmp = 0,
                 cellularJitter = 0.4f,
-                distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
-                cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
+                distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
+                cellularReturnType = WorleyNoise.CellularReturnType.Distance2
             };
         }
 
         WorleyDatas GetWorleyDatas()
         {
-            TreeWorleyNoise worley = GetWorleyGenerator();
+            WorleyNoise worley = GetWorleyGenerator();
             float frequency = 0.01f;
 
             float3 randomPosition = Random().NextFloat3();
 
-            TreeWorleyNoise.CellData cellFromIndex;
-            TreeWorleyNoise.CellData cellFromPosition;
+            WorleyNoise.CellData cellFromIndex;
+            WorleyNoise.CellData cellFromPosition;
 
             cellFromPosition = worley.GetCellData(randomPosition, frequency);
             cellFromIndex = worley.GetCellData(cellFromPosition.index, frequency);
@@ -161,9 +161,9 @@ namespace Tests
 
         struct WorleyDatas
         {
-            public readonly TreeWorleyNoise.CellData cellFromIndex;
-            public readonly TreeWorleyNoise.CellData cellFromPosition;
-            public WorleyDatas(TreeWorleyNoise.CellData cellFromIndex, TreeWorleyNoise.CellData cellFromPosition)
+            public readonly WorleyNoise.CellData cellFromIndex;
+            public readonly WorleyNoise.CellData cellFromPosition;
+            public WorleyDatas(WorleyNoise.CellData cellFromIndex, WorleyNoise.CellData cellFromPosition)
             {
                 this.cellFromIndex = cellFromIndex;
                 this.cellFromPosition = cellFromPosition;
