@@ -48,21 +48,21 @@ public class TreeManager : MonoBehaviour
         float2 min = new float2(-10, -10);
         float2 max = new float2(10, 10);
 
-        bowyerWatson = new BowyerWatsonTriangulation();
-        bowyerWatson.points = new NativeList<float2>(Allocator.Persistent);
+        //bowyerWatson = new BowyerWatsonTriangulation();
+        var points = new NativeList<float2>(Allocator.Persistent);
 
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
                 int2 index = new int2(x, z);
                 float3 position = worley.GetCellData(index, rootFrequency).position;
-                bowyerWatson.points.Add(new float2(position.x, position.z));
+                points.Add(new float2(position.x, position.z));
             }
 
         //for(int i = 0; i < 7; i++)
         //    bowyerWatson.points.Add(random.NextFloat2(min, max));
 
-        bowyerWatson.Triangulate();
+        bowyerWatson.Triangulate(points);
     }
 
     void Update()

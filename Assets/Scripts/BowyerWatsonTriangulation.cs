@@ -3,7 +3,7 @@ using Unity.Collections;
 
 public struct BowyerWatsonTriangulation
 {
-    public NativeList<float2> points;
+    NativeList<float2> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
@@ -88,8 +88,9 @@ public struct BowyerWatsonTriangulation
 		public float radius;
 	}
 
-    public NativeArray<float2x4> Triangulate()
+    public NativeArray<float2x4> Triangulate(NativeList<float2> points)
     {
+        this.points = points;
         triangles = new NativeList<Triangle>(Allocator.Persistent);
         superTriangle = SuperTriangle();
         triangles.Add(superTriangle);
