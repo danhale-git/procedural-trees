@@ -31,7 +31,7 @@ public class TreeManager : MonoBehaviour
         {
             seed = random.NextInt(),
             perterbAmp = 0,
-            cellularJitter = 0.4f,
+            cellularJitter = 0.3f,
             distanceFunction = TreeWorleyNoise.DistanceFunction.Euclidean,
             cellularReturnType = TreeWorleyNoise.CellularReturnType.Distance2
         };
@@ -39,6 +39,8 @@ public class TreeManager : MonoBehaviour
         Debug.Log("Seed: "+worley.seed);
 
         TestBW();
+
+        DebugWorley(15);
     }
 
     void TestBW()
@@ -49,10 +51,18 @@ public class TreeManager : MonoBehaviour
         bowyerWatson = new BowyerWatsonTriangulation();
         bowyerWatson.points = new NativeList<float2>(Allocator.Persistent);
 
-        for(int i = 0; i < 7; i++)
-            bowyerWatson.points.Add(random.NextFloat2(min, max));
+        for(int x = -1; x < 2; x++)
+            for(int z = -1; z < 2; z++)
+            {
+                int2 index = new int2(x, z);
+                float3 position = worley.GetCellData(index, rootFrequency).position;
+                bowyerWatson.points.Add(new float2(position.x, position.z));
+            }
 
-        bowyerWatson.Execute();
+        //for(int i = 0; i < 7; i++)
+        //    bowyerWatson.points.Add(random.NextFloat2(min, max));
+
+        bowyerWatson.Triangulate();
     }
 
     void Update()

@@ -39,6 +39,20 @@ public struct BowyerWatsonTriangulation
         }
         public readonly float2 a, b, c;
         public Circumcircle circumcircle;
+
+        public float2 this[int i]
+        {
+            get
+            {
+                switch(i)
+                {
+                    case 0: return a;
+                    case 1: return b;
+                    case 2: return c;    
+                    default: throw new System.IndexOutOfRangeException("Index "+i+" out of range 2");
+                }
+            }
+        }
     }
 
     struct Circumcircle
@@ -62,7 +76,7 @@ public struct BowyerWatsonTriangulation
 		public float radius;
 	}
 
-    public void Execute()
+    public void Triangulate()
     {
         triangles = new NativeList<Triangle>(Allocator.Persistent);
         superTriangle = SuperTriangle();
@@ -81,6 +95,10 @@ public struct BowyerWatsonTriangulation
 
             edges.Dispose();
         }
+
+        RemoveExternalTriangles();
+        
+        DrawTriangles();
 
         points.Dispose();
         triangles.Dispose();
@@ -130,7 +148,6 @@ public struct BowyerWatsonTriangulation
         for(int i = 0; i < edges.Length; i++)
             if(check.Equals(edges[i]))
             {
-                DrawLineFloat2(check.a, check.b, new UnityEngine.Color(1, 0, 0, 0.5f));
                 otherIndex = i;
                 return true;
             }
@@ -149,8 +166,6 @@ public struct BowyerWatsonTriangulation
             );
 
             triangles.Add(triangle);
-
-            DrawTriangle(triangle, new UnityEngine.Color(0, 1, 0, 0.5f));//DEBUG
         }
     }
 
@@ -160,14 +175,23 @@ public struct BowyerWatsonTriangulation
         trianglesCopy.CopyFrom(triangles.ToArray());
         triangles.Clear();
 
-        for(int i = 0; i < triangles.Length; i++)
+        for(int i = 0; i < trianglesCopy.Length; i++)
         {
-
+            Triangle triangle = trianglesCopy[i];
+            if(!SharesVertexWithSupertriangle(triangle))
+                triangles.Add(triangle);
         }
+
+        trianglesCopy.Dispose();
     }
 
-    bool TriangleSharesVertexWithSupertriangle()
+    bool SharesVertexWithSupertriangle(Triangle triangle)
     {
+        for(int t = 0; t < 3; t++)
+            for(int s = 0; s < 3; s++)
+                if(triangle[t].Equals(superTriangle[s]))
+                    return true;
+
         return false;
     }
 
@@ -243,12 +267,19 @@ public struct BowyerWatsonTriangulation
 	}
     
     //DEBUG
+    void DrawTriangles()
+    {
+        for(int i = 0; i < triangles.Length; i++)
+        {
+            DrawTriangle(triangles[i], UnityEngine.Color.green);
+            DrawPoint(triangles[i].circumcircle.center, UnityEngine.Color.red);
+        }
+    }
     void DrawTriangle(Triangle triangle, UnityEngine.Color color)
     {
         DrawLineFloat2(triangle.a, triangle.b, color);
         DrawLineFloat2(triangle.b, triangle.c, color);
         DrawLineFloat2(triangle.c, triangle.a, color);
-        //DrawCircle(triangle.circumcircle, new UnityEngine.Color(0, 1, 1, 1));
     }
     void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
     {
