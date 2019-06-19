@@ -3,14 +3,12 @@ using Unity.Collections;
 
 public struct BowyerWatsonTriangulation
 {
-
     public NativeList<float2> points;
-    int currentPoint;
 
-    NativeList<Triangle> incompleteTriangles;
-    //NativeList<Triangle> completeTriangles;
-
+    NativeList<Triangle> triangles;
     NativeList<Edge> edges;
+
+    Triangle superTriangle;
 
     struct Edge
     {
@@ -37,7 +35,16 @@ public struct BowyerWatsonTriangulation
             this.a = a;
             this.b = b;
             this.c = c;
+            this.circumcircle = new Circumcircle(a, b, c);
+        }
+        public readonly float2 a, b, c;
+        public Circumcircle circumcircle;
+    }
 
+    struct Circumcircle
+	{
+        public Circumcircle(float2 a, float2 b, float2 c)
+        {
             float dA, dB, dC, aux1, aux2, div;
 	
             dA = a.x * a.x + a.y * a.y;
@@ -48,88 +55,62 @@ public struct BowyerWatsonTriangulation
             aux2 = -(dA*(c.x - b.x) + dB*(a.x - c.x) + dC*(b.x - a.x));
             div = (2*(a.x*(c.y - b.y) + b.x*(a.y-c.y) + c.x*(b.y - a.y)));
         
-            Circumcircle circle = new Circumcircle();
-
-            float2 center = new float2(
-                aux1/div,
-                aux2/div
-            );
-        
-            circle.center = center;
-            circle.radius = math.sqrt((center.x - a.x)*(center.x - a.x) + (center.y - a.y)*(center.y - a.y));
-
-            this.circumcircle = circle;
+            this.center = new float2(aux1/div, aux2/div);
+            this.radius = math.sqrt((center.x - a.x)*(center.x - a.x) + (center.y - a.y)*(center.y - a.y));
         }
-        public readonly float2 a, b, c;
-        public Circumcircle circumcircle;
-    }
-
-    struct Circumcircle
-	{
 		public float2 center;
 		public float radius;
 	}
 
-    public void Initialise()
+    public void Execute()
     {
-        incompleteTriangles = new NativeList<Triangle>(Allocator.Persistent);
+        triangles = new NativeList<Triangle>(Allocator.Persistent);
+        superTriangle = SuperTriangle();
+        triangles.Add(superTriangle);
 
-        DrawPoint(CenterPoint(), UnityEngine.Color.red);//DEBUG
-
-        incompleteTriangles.Add(SuperTriangle());
-    }
-
-    public void Triangulate()
-    {
-        if(currentPoint == points.Length-1)
+        for(int i = 0; i < points.Length; i++)
         {
-            incompleteTriangles.Dispose();
-            points.Dispose();
-            return;
+            edges = new NativeList<Edge>(Allocator.Temp);
+            float2 point = points[i];
+
+            RemoveIntersectingTriangles(point);
+
+            AddNewTriangles(point);
+
+            DrawPoint(point, UnityEngine.Color.blue);//DEBUG
+
+            edges.Dispose();
         }
 
-        NativeArray<Triangle> incompleteTrianglesCopy = new NativeArray<Triangle>(incompleteTriangles.Length, Allocator.Persistent);
-        incompleteTrianglesCopy.CopyFrom(incompleteTriangles.ToArray());
-        edges = new NativeList<Edge>(Allocator.Temp);
-        incompleteTriangles.Clear();
-        
-        float2 point = points[currentPoint];
-        currentPoint++;
+        points.Dispose();
+        triangles.Dispose();
+    }
 
-        for(int i = 0; i < incompleteTrianglesCopy.Length; i++)
+    void RemoveIntersectingTriangles(float2 point)
+    {
+        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
+        trianglesCopy.CopyFrom(triangles.ToArray());
+        triangles.Clear();
+
+        for(int i = 0; i < trianglesCopy.Length; i++)
         {
-            Triangle triangle = incompleteTrianglesCopy[i];
+            Triangle triangle = trianglesCopy[i];
             float distanceFromCircumcircle = math.distance(point, triangle.circumcircle.center);
             bool pointIsInCircumcircle = distanceFromCircumcircle < triangle.circumcircle.radius;
 
             if(pointIsInCircumcircle)
             {
-                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].a,incompleteTrianglesCopy[i].b));
-                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].b,incompleteTrianglesCopy[i].c));
-                AddOrRemoveEdge(new Edge(incompleteTrianglesCopy[i].c,incompleteTrianglesCopy[i].a));
+                AddOrRemoveEdge(new Edge(trianglesCopy[i].a,trianglesCopy[i].b));
+                AddOrRemoveEdge(new Edge(trianglesCopy[i].b,trianglesCopy[i].c));
+                AddOrRemoveEdge(new Edge(trianglesCopy[i].c,trianglesCopy[i].a));
             }
             else
             {
-                incompleteTriangles.Add(incompleteTrianglesCopy[i]);
+                triangles.Add(trianglesCopy[i]);
             }
         }
 
-        for(int i = 0; i < edges.Length; i++)
-        {
-            Triangle triangle = new Triangle(
-                edges[i].a,
-                edges[i].b,
-                point
-            );
-
-            incompleteTriangles.Add(triangle);
-
-            DrawTriangle(triangle, new UnityEngine.Color(0, 1, 0, 0.5f));
-        }
-        DrawPoint(point, UnityEngine.Color.blue);
-
-        edges.Dispose();
-        incompleteTrianglesCopy.Dispose();
+        trianglesCopy.Dispose();
     }
 
     void AddOrRemoveEdge(Edge edge)
@@ -157,9 +138,42 @@ public struct BowyerWatsonTriangulation
         return false;
     }
 
+    void AddNewTriangles(float2 point)
+    {
+        for(int i = 0; i < edges.Length; i++)
+        {
+            Triangle triangle = new Triangle(
+                edges[i].a,
+                edges[i].b,
+                point
+            );
+
+            triangles.Add(triangle);
+
+            DrawTriangle(triangle, new UnityEngine.Color(0, 1, 0, 0.5f));//DEBUG
+        }
+    }
+
+    void RemoveExternalTriangles()
+    {
+        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
+        trianglesCopy.CopyFrom(triangles.ToArray());
+        triangles.Clear();
+
+        for(int i = 0; i < triangles.Length; i++)
+        {
+
+        }
+    }
+
+    bool TriangleSharesVertexWithSupertriangle()
+    {
+        return false;
+    }
+
     Triangle SuperTriangle()
     {
-        float2 center = CenterPoint();
+        float2 center = MeanPoint();
         float radius = IncircleRadius(center);
 
         float2 topRight = center + new float2(radius, radius);
@@ -188,19 +202,20 @@ public struct BowyerWatsonTriangulation
         );
 
         Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
-        DrawTriangle(triangle, UnityEngine.Color.red);
+        DrawTriangle(triangle, UnityEngine.Color.red);//DEBUG
 
         return triangle;
     }
 
-    public float2 CenterPoint()
+    public float2 MeanPoint()
     {
-        float2 center = float2.zero;
+        float2 sum = float2.zero;
         for(int i = 0; i < points.Length; i++)
-            center += points[i];
+            sum += points[i];
 
-        return center /= points.Length;
+        return sum /= points.Length;
     }
+
     public float IncircleRadius(float2 center)
     {
         float largestDistance = 0;

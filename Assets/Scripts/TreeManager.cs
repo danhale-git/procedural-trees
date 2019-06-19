@@ -52,7 +52,7 @@ public class TreeManager : MonoBehaviour
         for(int i = 0; i < 7; i++)
             bowyerWatson.points.Add(random.NextFloat2(min, max));
 
-        bowyerWatson.Initialise();
+        bowyerWatson.Execute();
     }
 
     void Update()
@@ -64,7 +64,7 @@ public class TreeManager : MonoBehaviour
         if(/*Physics.Raycast(ray, out hit) &&  */Input.GetMouseButtonDown(0))
         {
             //float2 point = new float2(hit.point.x, hit.point.z);
-            bowyerWatson.Triangulate();
+            //bowyerWatson.Triangulate();
         }
 
     }
