@@ -104,7 +104,7 @@ public struct BowyerWatsonTriangulation
 
             AddNewTriangles(point);
 
-            DrawPoint(point, UnityEngine.Color.blue);//DEBUG
+            //DrawPoint(point, UnityEngine.Color.blue);//DEBUG
 
             edges.Dispose();
         }
@@ -115,7 +115,7 @@ public struct BowyerWatsonTriangulation
         for(int i = 0; i < triangles.Length; i++)
             delaunayTriangles[i] = triangles[i];
         
-        DrawTriangles();//DEBUG
+        //DrawTriangles();//DEBUG
 
         points.Dispose();
         triangles.Dispose();
@@ -245,7 +245,7 @@ public struct BowyerWatsonTriangulation
         );
 
         Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
-        DrawTriangle(triangle, UnityEngine.Color.red);//DEBUG
+        //DrawTriangle(triangle, UnityEngine.Color.red);//DEBUG
 
         return triangle;
     }

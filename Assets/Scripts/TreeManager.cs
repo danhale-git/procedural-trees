@@ -11,6 +11,7 @@ public class TreeManager : MonoBehaviour
     WorleyNoise worley;
 
     BowyerWatsonTriangulation bowyerWatson;
+    DirichletTessellation dirichlet;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
@@ -38,43 +39,49 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
-        TestBW();
+        for(int x = -2; x < 3; x++)
+            for(int z = -2; z < 3; z++)
+            {
+                int2 index = new int2(x, z);
+                TestBW(index);
+            }
 
-        DebugWorley(15);
+        DebugWorley(18);
     }
 
-    void TestBW()
+    void TestBW(int2 cellIndex)
     {
-        float2 min = new float2(-10, -10);
-        float2 max = new float2(10, 10);
-
-        //bowyerWatson = new BowyerWatsonTriangulation();
         var points = new NativeList<float2>(Allocator.Persistent);
 
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
-                int2 index = new int2(x, z);
+                int2 index = new int2(x, z) + cellIndex;
                 float3 position = worley.GetCellData(index, rootFrequency).position;
                 points.Add(new float2(position.x, position.z));
             }
 
-        //for(int i = 0; i < 7; i++)
-        //    bowyerWatson.points.Add(random.NextFloat2(min, max));
+        WorleyNoise.CellData cellData = worley.GetCellData(cellIndex, rootFrequency);
 
-        bowyerWatson.Triangulate(points);
+        NativeArray<float2x4> delaunay = bowyerWatson.Triangulate(points);
+
+        dirichlet = new DirichletTessellation();
+        dirichlet.Tessalate(delaunay, cellData.position);
+
+        delaunay.Dispose();
     }
 
     void Update()
     {
-        //Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        //RaycastHit hit;
+        RaycastHit hit;
 
-        if(/*Physics.Raycast(ray, out hit) &&  */Input.GetMouseButtonDown(0))
+        if(Physics.Raycast(ray, out hit) &&  Input.GetMouseButtonDown(0))
         {
-            //float2 point = new float2(hit.point.x, hit.point.z);
-            //bowyerWatson.Triangulate();
+            float2 point = new float2(hit.point.x, hit.point.z);
+            //var vert = new ClockwiseVertex(new float2(hit.point.x, hit.point.z), new float2(0,0));
+            //Debug.Log(vert.GetAngle());
         }
 
     }
