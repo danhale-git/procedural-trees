@@ -3,42 +3,37 @@ using Unity.Mathematics;
 
 public class DirichletTessellation
 {
-    NativeList<ClockwiseVertex> edgeVertices;
+    NativeList<float2> edgeVertices;
+    float2 centerPoint;
+    
+    VectorUtil vectorUtil;
 
-    public void Tessalate(NativeArray<float2x4> triangles, float3 cellPosition)
+    public void Tessalate(NativeArray<float2x4> triangles, float3 point)
     {
-        edgeVertices = new NativeList<ClockwiseVertex>(Allocator.TempJob);
+        this.edgeVertices = new NativeList<float2>(Allocator.TempJob);
+        this.centerPoint = new float2(point.x, (float)point.z);
 
         for(int i = 0; i < triangles.Length; i++)
-        {
-            float2x4 triangle = triangles[i];
-            GatherCellVertices(triangle, cellPosition);
-        }
-
-        SortEdgeVerticesClockwise();
+            GatherCellEdgeVertices(triangles[i], centerPoint);
+        
+        SortVerticesClockwise(centerPoint);
         RemoveDuplicateVertices();
 
-        for(int i = 0; i < edgeVertices.Length; i++)
-        {
-            int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
-            DrawLineFloat2(edgeVertices[i].vertex, edgeVertices[nextIndex].vertex, UnityEngine.Color.green);//DEBUG
-        }
+        DrawEdges();//DEBUG
 
         edgeVertices.Dispose();
     }
 
-    void GatherCellVertices(float2x4 triangle, float3 pos)
+    void GatherCellEdgeVertices(float2x4 triangle, float2 centerPoint)
     {
-        float2 cellPosition = new float2(pos.x, pos.z);
-
         bool triangleInCell = false;
-        int cellPositionIndex = 0;
+        int notAtEdge = 0;
 
         for(int i = 0; i < 3; i++)
-            if(triangle[i].Equals(cellPosition))
+            if(triangle[i].Equals(centerPoint))
             {
                 triangleInCell = true;
-                cellPositionIndex = i;
+                notAtEdge = i;
             }
 
         if(!triangleInCell)
@@ -46,28 +41,27 @@ public class DirichletTessellation
 
         float2 circumcenter = triangle[3];
         for(int i = 0; i < 3; i++)
-            if(i != cellPositionIndex)
-            {
-                ClockwiseVertex vertex = new ClockwiseVertex(
-                    circumcenter,
-                    cellPosition
-                );
-
-                edgeVertices.Add(vertex);
-            }
+            if(i != notAtEdge)
+                edgeVertices.Add(new float2(circumcenter));
     }
 
-    void SortEdgeVerticesClockwise()
+    NativeArray<float2> SortVerticesClockwise(float2 center)
     {
-        NativeArray<ClockwiseVertex> sortedVertices = new NativeArray<ClockwiseVertex>(edgeVertices.Length, Allocator.Temp);
-        sortedVertices.CopyFrom(edgeVertices);
-        sortedVertices.Sort();
-        sortedVertices.CopyTo(edgeVertices);
+        NativeArray<ClockwiseVertex> sorter = new NativeArray<ClockwiseVertex>(edgeVertices.Length, Allocator.Temp);
+        for(int i = 0; i < edgeVertices.Length; i++)
+            sorter[i] = new ClockwiseVertex(edgeVertices[i], center);
+
+        sorter.Sort();
+
+        for(int i = 0; i < edgeVertices.Length; i++)
+            edgeVertices[i] = sorter[i].vertex;
+
+        return edgeVertices;                
     }
 
     void RemoveDuplicateVertices()
     {
-        NativeArray<ClockwiseVertex> edgeVerticesCopy = new NativeArray<ClockwiseVertex>(edgeVertices.Length, Allocator.Temp);
+        NativeArray<float2> edgeVerticesCopy = new NativeArray<float2>(edgeVertices.Length, Allocator.Temp);
         edgeVerticesCopy.CopyFrom(edgeVertices);
 
         edgeVertices.Clear();
@@ -90,6 +84,15 @@ public class DirichletTessellation
         {
             DrawLineFloat2(point + offsets[i], point-offsets[i], color);
         }
+    }
+
+    void DrawEdges()
+    {
+        for(int i = 0; i < edgeVertices.Length; i++)//DEBUG
+        {
+            int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
+            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], UnityEngine.Color.green);
+        }//DEBUG
     }
     //DEBUG
 }
