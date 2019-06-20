@@ -5,49 +5,6 @@ public class DirichletTessellation
 {
     NativeList<ClockwiseVertex> edgeVertices;
 
-    struct ClockwiseVertex : System.IComparable<ClockwiseVertex>
-    {
-        const float rad2Deg = 57.29578f;
-        
-        public readonly float2 vertex;
-        public readonly float2 clockCenter;
-
-        public ClockwiseVertex(float2 vertex, float2 clockCenter)
-        {
-            this.vertex = vertex;
-            this.clockCenter = clockCenter;
-        }
-
-        public int CompareTo(ClockwiseVertex other)
-        {
-            float thisAngle = GetAngle();
-            float otherAngle = other.GetAngle();
-            return thisAngle.CompareTo(otherAngle);
-        }
-
-        public float GetAngle()
-        {
-            float2 direction = math.normalize(vertex - clockCenter);
-            float2 up = new float2(0, 1);
-            return SignedAngle(direction, up);
-        }
-
-        float Angle(float2 from, float2 to)
-        {
-            float denominator = (float)math.sqrt(math.length(from) * math.length(to));
-            float dot = math.clamp(math.dot(from, to) / denominator, -1F, 1F);
-            return ((float)math.acos(dot)) * rad2Deg;
-        }
-
-        float SignedAngle(float2 from, float2 to)
-        {
-            float unsigned_angle = Angle(from, to);
-            float sign = math.sign(from.x * to.y - from.y * to.x);
-
-            return sign < 0 ? 360 - unsigned_angle : unsigned_angle;
-        }
-    }
-
     public void Tessalate(NativeArray<float2x4> triangles, float3 cellPosition)
     {
         edgeVertices = new NativeList<ClockwiseVertex>(Allocator.TempJob);
