@@ -104,8 +104,6 @@ public struct BowyerWatsonTriangulation
 
             AddNewTriangles(point);
 
-            //DrawPoint(point, UnityEngine.Color.blue);//DEBUG
-
             edges.Dispose();
         }
 
@@ -115,8 +113,6 @@ public struct BowyerWatsonTriangulation
         for(int i = 0; i < triangles.Length; i++)
             delaunayTriangles[i] = triangles[i];
         
-        //DrawTriangles();//DEBUG
-
         points.Dispose();
         triangles.Dispose();
 
@@ -125,9 +121,7 @@ public struct BowyerWatsonTriangulation
 
     void RemoveIntersectingTriangles(float2 point)
     {
-        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
-        trianglesCopy.CopyFrom(triangles.ToArray());
-        triangles.Clear();
+        NativeArray<Triangle> trianglesCopy = CopyAndClearTrianglesArray();
 
         for(int i = 0; i < trianglesCopy.Length; i++)
         {
@@ -148,6 +142,14 @@ public struct BowyerWatsonTriangulation
         }
 
         trianglesCopy.Dispose();
+    }
+
+    NativeArray<Triangle> CopyAndClearTrianglesArray()
+    {
+        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
+        trianglesCopy.CopyFrom(triangles.ToArray());
+        triangles.Clear();
+        return trianglesCopy;
     }
 
     void AddOrRemoveEdge(Edge edge)
@@ -190,9 +192,7 @@ public struct BowyerWatsonTriangulation
 
     void RemoveExternalTriangles()
     {
-        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
-        trianglesCopy.CopyFrom(triangles.ToArray());
-        triangles.Clear();
+        NativeArray<Triangle> trianglesCopy = CopyAndClearTrianglesArray();
 
         for(int i = 0; i < trianglesCopy.Length; i++)
         {
@@ -245,7 +245,6 @@ public struct BowyerWatsonTriangulation
         );
 
         Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
-        //DrawTriangle(triangle, UnityEngine.Color.red);//DEBUG
 
         return triangle;
     }
@@ -284,43 +283,4 @@ public struct BowyerWatsonTriangulation
 
 		return point;
 	}
-    
-    //DEBUG
-    void DrawTriangles()
-    {
-        for(int i = 0; i < triangles.Length; i++)
-        {
-            DrawTriangle(triangles[i], UnityEngine.Color.green);
-            DrawPoint(triangles[i].circumcircle.center, UnityEngine.Color.red);
-        }
-    }
-    void DrawTriangle(Triangle triangle, UnityEngine.Color color)
-    {
-        DrawLineFloat2(triangle.a, triangle.b, color);
-        DrawLineFloat2(triangle.b, triangle.c, color);
-        DrawLineFloat2(triangle.c, triangle.a, color);
-    }
-    void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
-    {
-        float3 a3 = new float3(a.x, 0, a.y);
-        float3 b3 = new float3(b.x, 0, b.y);
-        UnityEngine.Debug.DrawLine(a3, b3, color, 100);
-    }
-    void DrawPoint(float2 point, UnityEngine.Color color)
-    {
-        var offsets = new AdjacentIntOffsetsClockwise();
-        for(int i = 0; i < 4; i++)
-        {
-            DrawLineFloat2(point + offsets[i], point-offsets[i], color);
-        }
-    }
-    void DrawCircle(Circumcircle circle, UnityEngine.Color color)
-    {
-        float2 horizontal = new float2(circle.radius, 0);
-        float2 vertical = new float2(0, circle.radius);
-
-        DrawLineFloat2(circle.center-horizontal, circle.center+horizontal, color);
-		DrawLineFloat2(circle.center-vertical, circle.center+vertical, color);
-    }
-    //DEBUG
 }
