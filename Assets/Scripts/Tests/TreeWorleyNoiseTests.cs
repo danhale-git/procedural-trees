@@ -135,6 +135,7 @@ namespace Tests
         {
             return new WorleyNoise()
             {
+                frequency = 0.01f,
                 seed = Random().NextInt(),
                 perterbAmp = 0,
                 cellularJitter = 0.4f,
@@ -146,15 +147,14 @@ namespace Tests
         WorleyDatas GetWorleyDatas()
         {
             WorleyNoise worley = GetWorleyGenerator();
-            float frequency = 0.01f;
 
             float3 randomPosition = Random().NextFloat3();
 
             WorleyNoise.CellData cellFromIndex;
             WorleyNoise.CellData cellFromPosition;
 
-            cellFromPosition = worley.GetCellData(randomPosition, frequency);
-            cellFromIndex = worley.GetCellData(cellFromPosition.index, frequency);
+            cellFromPosition = worley.GetCellData(randomPosition);
+            cellFromIndex = worley.GetCellData(cellFromPosition.index);
 
             return new WorleyDatas(cellFromIndex, cellFromPosition);
         }

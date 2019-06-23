@@ -6,7 +6,6 @@ using Unity.Collections;
 
 public class TreeManager : MonoBehaviour
 {
-    public const float rootFrequency = 0.1f;
     Unity.Mathematics.Random random;
     WorleyNoise worley;
 
@@ -30,6 +29,7 @@ public class TreeManager : MonoBehaviour
 
         worley = new WorleyNoise()
         {
+            frequency = 0.1f,
             seed = random.NextInt(),
             perterbAmp = 0,
             cellularJitter = 0.3f,
@@ -57,11 +57,11 @@ public class TreeManager : MonoBehaviour
             for(int z = -1; z < 2; z++)
             {
                 int2 index = new int2(x, z) + cellIndex;
-                float3 position = worley.GetCellData(index, rootFrequency).position;
+                float3 position = worley.GetCellData(index).position;
                 points.Add(new float2(position.x, position.z));
             }
 
-        WorleyNoise.CellData cellData = worley.GetCellData(cellIndex, rootFrequency);
+        WorleyNoise.CellData cellData = worley.GetCellData(cellIndex);
 
         NativeArray<float2x4> delaunay = bowyerWatson.Triangulate(points);
 
@@ -102,7 +102,7 @@ public class TreeManager : MonoBehaviour
             for(int z = -range; z < range; z++)
             {
                 int2 index = new int2(x,z);
-                GenerateTree(index); 
+                //GenerateTree(index); 
             } 
     }
 
@@ -115,7 +115,7 @@ public class TreeManager : MonoBehaviour
                 float zf = 0.1f * ( (float)math.abs(z) / range ); */
 
                 float dist2Edge;
-                WorleyNoise.CellData cell = worley.GetCellData(x, z, rootFrequency, out dist2Edge);
+                WorleyNoise.CellData cell = worley.GetCellData(x, z, out dist2Edge);
 
                 float colorFloat = cell.value;
                 Color color = new Color(colorFloat/* + dist2Edge */, colorFloat, colorFloat, 1);
@@ -141,7 +141,7 @@ public class TreeManager : MonoBehaviour
         return cube;
     }
 
-    void GenerateTree(int2 index)
+    /*void GenerateTree(int2 index)
     {
         GenerateTreeMeshJob generator = new GenerateTreeMeshJob{
             rootIndex = index,
@@ -151,5 +151,5 @@ public class TreeManager : MonoBehaviour
             random = random
         };
         generator.Execute();
-    }
+    } */
 }

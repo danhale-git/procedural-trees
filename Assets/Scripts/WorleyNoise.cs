@@ -9,6 +9,7 @@ public struct WorleyNoise
 
 	public int seed;
 	
+	public float2 frequency;
 	public float perterbAmp;
 	public float cellularJitter;
 	public DistanceFunction distanceFunction;
@@ -33,7 +34,7 @@ public struct WorleyNoise
 		public float3 position;
 	}
 
-	public CellData GetCellData(int2 cellIndex, float2 frequency)
+	public CellData GetCellData(int2 cellIndex)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
 
@@ -49,39 +50,39 @@ public struct WorleyNoise
 		return cell;
     }
 
-	public CellData GetCellData(float x, float y, float2 frequency)
+	public CellData GetCellData(float x, float y)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellData(float x, float y, float2 frequency, out float distanceToEdge)
+	public CellData GetCellData(float x, float y, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
 		CellData cell = GetWorleyData(x, y, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
 		return cell;
 	}
-	public CellData GetCellData(float x, float y, float2 frequency, out CellData adjacent, out float distanceToEdge)
+	public CellData GetCellData(float x, float y, out CellData adjacent, out float distanceToEdge)
 	{
 		CellData cell = GetWorleyData(x, y, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
 	}
 	
-	public CellData GetCellData(float3 position, float2 frequency)
+	public CellData GetCellData(float3 position)
 	{
 		CellData adjacentPlaceholder;
 		float dist2EdgePlaceholder;
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out dist2EdgePlaceholder, false, false);
 		return cell;
 	}
-	public CellData GetCellData(float3 position, float2 frequency, out float distanceToEdge)
+	public CellData GetCellData(float3 position, out float distanceToEdge)
 	{
 		CellData adjacentPlaceholder;
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacentPlaceholder, out distanceToEdge, false, true);
 		return cell;
 	}
-	public CellData GetCellData(float3 position, float2 frequency, out CellData adjacent, out float distanceToEdge)
+	public CellData GetCellData(float3 position, out CellData adjacent, out float distanceToEdge)
 	{
 		CellData cell = GetWorleyData(position.x, position.z, frequency, out adjacent, out distanceToEdge, true, true);
 		return cell;
