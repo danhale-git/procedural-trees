@@ -28,7 +28,7 @@ public struct TreeGenerator
     {
         NativeList<float2> edgeVertices = worley.GetCellVertices(cellIndex);
 
-        AddCellMesh(edgeVertices, cell.position);
+        DrawCell(edgeVertices, cell.position);
 
         edgeVertices.Dispose();
 
@@ -39,7 +39,7 @@ public struct TreeGenerator
     }
 
 
-    void AddCellMesh(NativeArray<float2> worleyCellEdge, float3 cellPosition)
+    void DrawCell(NativeArray<float2> worleyCellEdge, float3 cellPosition)
     {
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
@@ -58,18 +58,14 @@ public struct TreeGenerator
         {
             int current = i + vertexIndex;
             int next = (i == worleyCellEdge.Length ? 1 : i+1) + vertexIndex;
-            int cell = 0 + vertexIndex;
-            Debug.Log("Triangle "+(i+vertexIndex)+" - "+current+" "+next+" "+cell);
+            int cell = vertexIndex;
 
             triangles.Add(current);
             triangles.Add(next);
             triangles.Add(cell);            
         }
 
-        vertexIndex += worleyCellEdge.Length + 1;
-
-        Debug.Log(vertices.Length);
-        Debug.Log(triangles.Length);
+        vertexIndex += worleyCellEdge.Length;
     }
 
     void MakeMesh()
