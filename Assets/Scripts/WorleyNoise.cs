@@ -14,6 +14,9 @@ public struct WorleyNoise
 	public float cellularJitter;
 	public DistanceFunction distanceFunction;
 	public CellularReturnType cellularReturnType;
+
+	BowyerWatsonTriangulation triangulation;
+    DirichletTessellation tessellation;
 	
     CELL_2D cell_2D;
     const int X_PRIME = 1619;
@@ -48,6 +51,30 @@ public struct WorleyNoise
 		cell.value =  To01(ValCoord2D(seed, cellIndex.x, cellIndex.y));
 		
 		return cell;
+    }
+
+	public NativeList<float2> GetCellVertices(int2 cellIndex)
+    {
+        var points = new NativeList<float2>(Allocator.Persistent);
+
+		float3 cellPosition = float3.zero;
+
+        for(int x = -1; x < 2; x++)
+            for(int z = -1; z < 2; z++)
+            {
+                int2 index = new int2(x, z) + cellIndex;
+                float3 position = GetCellData(index).position;
+                points.Add(new float2(position.x, position.z));
+
+				if(index.Equals(cellIndex))
+                    cellPosition = position;
+            }
+
+        NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
+        NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, UnityEngine.Color.red);
+        delaunay.Dispose();
+
+        return vertices;
     }
 
 	public CellData GetCellData(float x, float y)

@@ -1,42 +1,97 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
+using UnityEngine;
+using System.Collections.Generic;
+
 public struct TreeGenerator
 {
-    public Random random;
+    public Unity.Mathematics.Random random;
     public WorleyNoise worley;
+    public GameObject meshPrefab;
+    public Material material;
 
-    BowyerWatsonTriangulation triangulation;
-    DirichletTessellation tessellation;
+    WorleyNoise.CellData cell;
 
+    NativeList<float3> vertices;
+    NativeList<int> triangles;
+    int vertexIndex;
+    
     public void Generate(int2 cellIndex)
     {
+        cell = worley.GetCellData(cellIndex);
+
         Tree(cellIndex);
     }
 
     void Tree(int2 cellIndex)
     {
-        var points = new NativeList<float2>(Allocator.Persistent);
+        NativeList<float2> edgeVertices = worley.GetCellVertices(cellIndex);
 
-        float3 cellPosition = float3.zero;
+        AddCellMesh(edgeVertices, cell.position);
 
-        for(int x = -1; x < 2; x++)
-            for(int z = -1; z < 2; z++)
-            {
-                int2 index = new int2(x, z) + cellIndex;
-                float3 position = worley.GetCellData(index).position;
-                points.Add(new float2(position.x, position.z));
-
-                if(index.Equals(cellIndex))
-                    cellPosition = position;
-            }
-
-        NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
-
-        NativeList<float2> edgeVertices = tessellation.Tessalate(delaunay, cellPosition, UnityEngine.Color.red);
-
-        delaunay.Dispose();
         edgeVertices.Dispose();
+
+        MakeMesh();
+
+        vertices.Dispose();
+        triangles.Dispose();
+    }
+
+
+    void AddCellMesh(NativeArray<float2> worleyCellEdge, float3 cellPosition)
+    {
+        vertices = new NativeList<float3>(Allocator.Temp);
+        triangles = new NativeList<int>(Allocator.Temp);
+        vertexIndex = 0;
+
+        vertices.Add(cellPosition);
+
+        for(int i = 0; i < worleyCellEdge.Length; i++)
+        {
+            float2 two = worleyCellEdge[i];
+            float3 three = new float3(two.x, 0, two.y);
+            vertices.Add(three);
+        }
+
+        for(int i = 1; i < worleyCellEdge.Length+1; i++)
+        {
+            int current = i + vertexIndex;
+            int next = (i == worleyCellEdge.Length ? 1 : i+1) + vertexIndex;
+            int cell = 0 + vertexIndex;
+            Debug.Log("Triangle "+(i+vertexIndex)+" - "+current+" "+next+" "+cell);
+
+            triangles.Add(current);
+            triangles.Add(next);
+            triangles.Add(cell);            
+        }
+
+        vertexIndex += worleyCellEdge.Length + 1;
+
+        Debug.Log(vertices.Length);
+        Debug.Log(triangles.Length);
+    }
+
+    void MakeMesh()
+    {
+        List<Vector3> vertexList = new List<Vector3>();
+        for(int i = 0; i < vertices.Length; i++)
+            vertexList.Add(vertices[i]);
+
+        GameObject meshObject = GameObject.Instantiate(meshPrefab);
+        MeshFilter meshFilter = meshObject.GetComponent<MeshFilter>();
+        MeshRenderer meshRenderer = meshObject.GetComponent<MeshRenderer>();
+
+        Mesh mesh = new Mesh();
+        mesh.SetVertices(vertexList);
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+
+        meshRenderer.material = this.material;
+        meshFilter.mesh = mesh;
+
+        float3 randomColor = random.NextFloat3();
+        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
     }
 
     //  Draw cell mesh

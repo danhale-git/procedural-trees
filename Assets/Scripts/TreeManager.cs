@@ -42,17 +42,21 @@ public class TreeManager : MonoBehaviour
         TreeGenerator generator = new TreeGenerator
         {
             random = this.random,
-            worley = this.worley
+            worley = this.worley,
+            meshPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TreeMesh.prefab"),
+            material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")
         };
 
-        for(int x = -2; x < 3; x++)
-            for(int z = -2; z < 3; z++)
+        for(int x = -1; x < 2; x++)
+            for(int z = -1; z < 2; z++)
             {
-                int2 index = new int2(x, z);
+                int2 index = new int2(x, z) * 2;
                 generator.Generate(index);
             }
 
-        DebugWorley(18);
+        //generator.Generate(int2.zero);
+
+        //DebugWorley(18);
     }
 
     void Update()
