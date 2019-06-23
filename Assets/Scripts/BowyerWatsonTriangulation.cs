@@ -22,9 +22,11 @@ public struct BowyerWatsonTriangulation
         public bool Equals(Edge other)
         {
             bool match = this.a.Equals(other.a) && this.b.Equals(other.b);
+            if(match) return true;
             bool oppositeMatch = this.a.Equals(other.b) && this.b.Equals(other.a);
-
-            return (match || oppositeMatch);
+            if(oppositeMatch) return true;
+            
+            return false;
         }
     }
 
