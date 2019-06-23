@@ -10,6 +10,8 @@ public struct BowyerWatsonTriangulation
 
     Triangle superTriangle;
 
+    VectorUtil vectorUtil;
+
     struct Edge
     {
         public Edge(float2 a, float2 b)
@@ -21,11 +23,10 @@ public struct BowyerWatsonTriangulation
 
         public bool Equals(Edge other)
         {
-            bool match = this.a.Equals(other.a) && this.b.Equals(other.b);
-            if(match) return true;
+            // Matching edges always have vertices in opposite order
             bool oppositeMatch = this.a.Equals(other.b) && this.b.Equals(other.a);
             if(oppositeMatch) return true;
-            
+
             return false;
         }
     }
@@ -180,12 +181,21 @@ public struct BowyerWatsonTriangulation
 
     void AddNewTriangles(float2 point)
     {
+        NativeArray<float2> vertices = new NativeArray<float2>(3, Allocator.Temp);
+
         for(int i = 0; i < edges.Length; i++)
         {
+            vertices[0] = edges[i].a;
+            vertices[1] = edges[i].b;
+            vertices[2] = point;
+
+            float2 triangleCenter = vectorUtil.MeanPoint(vertices);
+            vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
+
             Triangle triangle = new Triangle(
-                edges[i].a,
-                edges[i].b,
-                point
+                vertices[0],
+                vertices[1],
+                vertices[2]
             );
 
             triangles.Add(triangle);
@@ -218,7 +228,7 @@ public struct BowyerWatsonTriangulation
 
     Triangle SuperTriangle()
     {
-        float2 center = MeanPoint();
+        float2 center = vectorUtil.MeanPoint(points);
         float radius = IncircleRadius(center);
 
         float2 topRight = center + new float2(radius, radius);
@@ -249,15 +259,6 @@ public struct BowyerWatsonTriangulation
         Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
 
         return triangle;
-    }
-
-    public float2 MeanPoint()
-    {
-        float2 sum = float2.zero;
-        for(int i = 0; i < points.Length; i++)
-            sum += points[i];
-
-        return sum /= points.Length;
     }
 
     public float IncircleRadius(float2 center)
