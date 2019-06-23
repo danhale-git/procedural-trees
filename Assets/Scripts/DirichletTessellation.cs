@@ -16,7 +16,7 @@ public class DirichletTessellation
         for(int i = 0; i < triangles.Length; i++)
             GatherCellEdgeVertices(triangles[i], centerPoint);
         
-        SortVerticesClockwise(centerPoint);
+        vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
         RemoveDuplicateVertices();
 
         DrawEdges();//DEBUG
@@ -43,42 +43,6 @@ public class DirichletTessellation
         for(int i = 0; i < 3; i++)
             if(i != notAtEdge)
                 edgeVertices.Add(new float2(circumcenter));
-    }
-
-    struct VertexAngle : System.IComparable<VertexAngle>
-    {
-        public readonly float2 vertex;
-        public readonly float angle;
-
-        public VertexAngle(float2 vertex, float angle)
-        {
-            this.vertex = vertex;
-            this.angle = angle;
-        }
-
-        public int CompareTo(VertexAngle otherVertAngle)
-        {
-            return angle.CompareTo(otherVertAngle.angle);
-        }
-    }
-
-    NativeArray<float2> SortVerticesClockwise(float2 center)
-    {
-        VectorUtil vectorUtil;
-
-        NativeArray<VertexAngle> sorter = new NativeArray<VertexAngle>(edgeVertices.Length, Allocator.Temp);
-        for(int i = 0; i < edgeVertices.Length; i++)
-        {
-            float angle = vectorUtil.RotationFromUp(edgeVertices[i], center);
-            sorter[i] = new VertexAngle(edgeVertices[i], angle);
-        }
-
-        sorter.Sort();
-
-        for(int i = 0; i < edgeVertices.Length; i++)
-            edgeVertices[i] = sorter[i].vertex;
-
-        return edgeVertices;                
     }
 
     void RemoveDuplicateVertices()
