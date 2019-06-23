@@ -45,11 +45,33 @@ public class DirichletTessellation
                 edgeVertices.Add(new float2(circumcenter));
     }
 
+    struct VertexAngle : System.IComparable<VertexAngle>
+    {
+        public readonly float2 vertex;
+        public readonly float angle;
+
+        public VertexAngle(float2 vertex, float angle)
+        {
+            this.vertex = vertex;
+            this.angle = angle;
+        }
+
+        public int CompareTo(VertexAngle otherVertAngle)
+        {
+            return angle.CompareTo(otherVertAngle.angle);
+        }
+    }
+
     NativeArray<float2> SortVerticesClockwise(float2 center)
     {
-        NativeArray<ClockwiseVertex> sorter = new NativeArray<ClockwiseVertex>(edgeVertices.Length, Allocator.Temp);
+        VectorUtil vectorUtil;
+
+        NativeArray<VertexAngle> sorter = new NativeArray<VertexAngle>(edgeVertices.Length, Allocator.Temp);
         for(int i = 0; i < edgeVertices.Length; i++)
-            sorter[i] = new ClockwiseVertex(edgeVertices[i], center);
+        {
+            float angle = vectorUtil.RotationFromUp(edgeVertices[i], center);
+            sorter[i] = new VertexAngle(edgeVertices[i], angle);
+        }
 
         sorter.Sort();
 
