@@ -1,14 +1,14 @@
 ﻿using Unity.Collections;
 using Unity.Mathematics;
 
-public class DirichletTessellation
+public struct DirichletTessellation
 {
     NativeList<float2> edgeVertices;
     float2 centerPoint;
     
     VectorUtil vectorUtil;
 
-    public void Tessalate(NativeArray<float2x4> triangles, float3 point)
+    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor)
     {
         this.edgeVertices = new NativeList<float2>(Allocator.TempJob);
         this.centerPoint = new float2(point.x, (float)point.z);
@@ -19,9 +19,9 @@ public class DirichletTessellation
         vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
         RemoveDuplicateVertices();
 
-        DrawEdges();//DEBUG
+        DrawEdges(debugColor);//DEBUG
 
-        edgeVertices.Dispose();
+        return edgeVertices;
     }
 
     void GatherCellEdgeVertices(float2x4 triangle, float2 centerPoint)
@@ -72,12 +72,12 @@ public class DirichletTessellation
         }
     }
 
-    void DrawEdges()
+    void DrawEdges(UnityEngine.Color color)
     {
         for(int i = 0; i < edgeVertices.Length; i++)//DEBUG
         {
             int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
-            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], UnityEngine.Color.green);
+            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
         }//DEBUG
     }
     //DEBUG

@@ -39,36 +39,20 @@ public class TreeManager : MonoBehaviour
 
         Debug.Log("Seed: "+worley.seed);
 
+        TreeGenerator generator = new TreeGenerator
+        {
+            random = this.random,
+            worley = this.worley
+        };
+
         for(int x = -2; x < 3; x++)
             for(int z = -2; z < 3; z++)
             {
                 int2 index = new int2(x, z);
-                TestBW(index);
+                generator.Generate(index);
             }
 
         DebugWorley(18);
-    }
-
-    void TestBW(int2 cellIndex)
-    {
-        var points = new NativeList<float2>(Allocator.Persistent);
-
-        for(int x = -1; x < 2; x++)
-            for(int z = -1; z < 2; z++)
-            {
-                int2 index = new int2(x, z) + cellIndex;
-                float3 position = worley.GetCellData(index).position;
-                points.Add(new float2(position.x, position.z));
-            }
-
-        WorleyNoise.CellData cellData = worley.GetCellData(cellIndex);
-
-        NativeArray<float2x4> delaunay = bowyerWatson.Triangulate(points);
-
-        dirichlet = new DirichletTessellation();
-        dirichlet.Tessalate(delaunay, cellData.position);
-
-        delaunay.Dispose();
     }
 
     void Update()
