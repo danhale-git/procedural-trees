@@ -12,6 +12,7 @@ public struct TreeGenerator
     public Material material;
 
     WorleyNoise.CellData cell;
+    NativeArray<float3> cellVertices;
 
     NativeList<float3> vertices;
     NativeList<int> triangles;
@@ -30,20 +31,23 @@ public struct TreeGenerator
     
     public void Generate(int2 cellIndex)
     {
+        vertices = new NativeList<float3>(Allocator.Temp);
+        triangles = new NativeList<int>(Allocator.Temp);
+        vertexIndex = 0;
+        
         cell = worley.GetCellData(cellIndex);
+        cellVertices = worley.GetCellVertices(cellIndex);
 
         Tree(cellIndex);
+
+        cellVertices.Dispose();
     }
 
     void Tree(int2 cellIndex)
     {
-        vertices = new NativeList<float3>(Allocator.Temp);
-        triangles = new NativeList<int>(Allocator.Temp);
-        vertexIndex = 0;
 
-        NativeArray<float3> edgeVertices = worley.GetCellVertices(cellIndex);
 
-        DrawCell(edgeVertices, cell.position);
+        DrawCell(cellVertices, cell.position);
 
         var currentVerts = new NativeArray<float3>(vertices.Length-1, Allocator.Temp);
         var currentVertIndices = new NativeArray<int>(vertices.Length-1, Allocator.Temp);
@@ -59,7 +63,6 @@ public struct TreeGenerator
 
         MakeMesh();
 
-        edgeVertices.Dispose();
         vertices.Dispose();
         triangles.Dispose();
     }
