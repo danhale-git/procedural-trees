@@ -45,21 +45,9 @@ public struct TreeGenerator
 
     void Tree(int2 cellIndex)
     {
-
-
         DrawCell(cellVertices, cell.position);
 
-        var currentVerts = new NativeArray<float3>(vertices.Length-1, Allocator.Temp);
-        var currentVertIndices = new NativeArray<int>(vertices.Length-1, Allocator.Temp);
-        for(int i = 1; i < vertices.Length; i++)
-        {
-            currentVerts[i-1] = vertices[i];
-            currentVertIndices[i-1] = i;
-        }
-
-        Extrude(currentVerts, new float3(0, 10, 3));
-
-        currentVerts.Dispose();
+        Extrude(cellVertices, new float3(0, 10, 3));
 
         MakeMesh();
 
