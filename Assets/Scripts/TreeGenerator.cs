@@ -54,7 +54,6 @@ public struct TreeGenerator
         }
 
         Extrude(currentVerts, new float3(0, 10, 3));
-        //ExtrudeIndex(currentVertIndices, new float3(0, 10, 3));
 
         currentVerts.Dispose();
 
@@ -63,37 +62,6 @@ public struct TreeGenerator
         edgeVertices.Dispose();
         vertices.Dispose();
         triangles.Dispose();
-    }
-
-    NativeArray<int> ExtrudeIndex(NativeArray<int> extrudeFrom, float3 extrusion)
-    {
-        int vertCount = extrudeFrom.Length;
-        NativeArray<int> extrudeTo = new NativeArray<int>(extrudeFrom.Length, Allocator.Temp);
-
-        for(int i = 0; i < extrudeFrom.Length; i++)
-        {
-            float3 vertex = extrudeFrom[i] + extrusion;
-            this.vertices.Add(vertex);
-            extrudeTo[i] = i + vertexIndex;
-        }
-
-        for(int i = 0; i < vertCount; i++)
-        {
-            int currentEdge = i;
-            int nextEdge = i == extrudeFrom.Length-1 ? 0 : i+1;
-
-            triangles.Add(extrudeFrom[currentEdge]);
-            triangles.Add(extrudeFrom[nextEdge]);
-            triangles.Add(extrudeTo[currentEdge]);
-
-            triangles.Add(extrudeTo[currentEdge]);
-            triangles.Add(extrudeFrom[nextEdge]);
-            triangles.Add(extrudeTo[nextEdge]);
-        }
-
-        vertexIndex += vertCount*2;
-
-        return extrudeTo;
     }
 
     NativeArray<float3> Extrude(NativeArray<float3> extrudeFrom, float3 extrusion)
