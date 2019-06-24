@@ -35,9 +35,9 @@ public struct TreeGenerator
         float3 min = new float3(-2, 0, -2);
         float3 max = new float3(2, 0, 2);
         
-        extruded = Extrude(TrunkVertices(1), random.NextFloat3(min, max) + new float3(0, 4, 0));
-        extruded = Extrude(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
-        extruded = Extrude(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+        extruded = ExtrudeTrunk(TrunkVertices(1), random.NextFloat3(min, max) + new float3(0, 4, 0));
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
 
         MakeMesh();
 
@@ -70,7 +70,7 @@ public struct TreeGenerator
         return vertexArray;
     } 
 
-    NativeArray<float3> Extrude(NativeArray<float3> extrudeFrom, float3 extrusion)
+    NativeArray<float3> ExtrudeTrunk(NativeArray<float3> extrudeFrom, float3 extrusion)
     {
         int vertCount = extrudeFrom.Length;
         NativeArray<float3> extrudeTo = new NativeArray<float3>(extrudeFrom.Length, Allocator.Temp);
