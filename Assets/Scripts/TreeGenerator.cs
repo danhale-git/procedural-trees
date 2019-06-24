@@ -41,7 +41,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         vertexIndex = 0;
 
-        NativeList<float2> edgeVertices = worley.GetCellVertices(cellIndex);
+        NativeArray<float3> edgeVertices = worley.GetCellVertices(cellIndex);
 
         DrawCell(edgeVertices, cell.position);
 
@@ -99,18 +99,14 @@ public struct TreeGenerator
     }
 
 
-    void DrawCell(NativeArray<float2> worleyCellEdge, float3 cellCenterPosition)
+    void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
     {
         int cellCenter = vertexIndex;
         vertices.Add(cellCenterPosition);
         vertexIndex++;
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
-        {
-            float2 two = worleyCellEdge[i];
-            float3 three = new float3(two.x, 0, two.y);
-            vertices.Add(three);
-        }
+            vertices.Add(worleyCellEdge[i]);
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
         {
@@ -124,8 +120,6 @@ public struct TreeGenerator
 
         vertexIndex += worleyCellEdge.Length;
     }
-
-
 
     void MakeMesh()
     {
@@ -148,8 +142,4 @@ public struct TreeGenerator
         float3 randomColor = random.NextFloat3();
         meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
     }
-
-    //  Draw cell mesh
-    //  Draw tree trunk with one edge per cell edge
-    //  Draw leaf cells
 }

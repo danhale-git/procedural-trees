@@ -53,7 +53,7 @@ public struct WorleyNoise
 		return cell;
     }
 
-	public NativeList<float2> GetCellVertices(int2 cellIndex)
+	public NativeArray<float3> GetCellVertices(int2 cellIndex)
     {
         var points = new NativeList<float2>(Allocator.Persistent);
 
@@ -72,9 +72,18 @@ public struct WorleyNoise
 
         NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
         NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, UnityEngine.Color.red);
-        delaunay.Dispose();
 
-        return vertices;
+		NativeArray<float3> vertices3D = new NativeArray<float3>(vertices.Length, Allocator.Persistent);
+		for(int i = 0; i < vertices.Length; i++)
+		{
+			float2 v = vertices[i];
+			vertices3D[i] = new float3(v.x, 0, v.y);
+		}
+
+        delaunay.Dispose();
+		vertices.Dispose();
+
+        return vertices3D;
     }
 
 	public CellData GetCellData(float x, float y)
