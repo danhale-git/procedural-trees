@@ -70,4 +70,11 @@ public struct VectorUtil
         float dot = math.clamp(math.dot(from, to) / denominator, -1F, 1F);
         return ((float)math.acos(dot)) * rad2Deg;
     }
+    
+    public float Angle(float3 from, float3 to)
+    {
+        float denominator = (float)math.sqrt(math.length(from) * math.length(to));
+        float dot = math.clamp(math.dot(from, to) / denominator, -1F, 1F);
+        return ((float)math.acos(dot)) * rad2Deg;
+    }
 }
