@@ -101,8 +101,9 @@ public struct TreeGenerator
 
     void DrawCell(NativeArray<float2> worleyCellEdge, float3 cellCenterPosition)
     {
-        vertices.Add(cellCenterPosition);
         int cellCenter = vertexIndex;
+        vertices.Add(cellCenterPosition);
+        vertexIndex++;
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
         {
@@ -111,17 +112,17 @@ public struct TreeGenerator
             vertices.Add(three);
         }
 
-        for(int i = 1; i < worleyCellEdge.Length+1; i++)
+        for(int i = 0; i < worleyCellEdge.Length; i++)
         {
             int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == worleyCellEdge.Length ? 1 : i+1);
+            int nextEdge = vertexIndex + (i == worleyCellEdge.Length-1 ? 0 : i+1);
 
             triangles.Add(currentEdge);
             triangles.Add(nextEdge);
             triangles.Add(cellCenter);            
         }
 
-        vertexIndex += worleyCellEdge.Length + 1;
+        vertexIndex += worleyCellEdge.Length;
     }
 
 
