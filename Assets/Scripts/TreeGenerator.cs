@@ -30,14 +30,23 @@ public struct TreeGenerator
         cellVertices = worley.GetCellVertices(cellIndex);
 
         DrawCell(cellVertices, cell.position);
-        NativeArray<float3> extruded;
 
         float3 min = new float3(-2, 0, -2);
         float3 max = new float3(2, 0, 2);
-        
-        extruded = ExtrudeTrunk(TrunkVertices(1), random.NextFloat3(min, max) + new float3(0, 4, 0));
-        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
-        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+
+        /*vertices.AddRange();
+        NativeArray<int> extruded = new NativeArray<int>(vertices.Length, Allocator.Temp);
+        for(int i = 0; i < vertices.Length; i++)
+        {
+            extruded[i] = i;
+        } */
+
+        NativeArray<int> extruded = TrunkVertices(1);
+
+        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 4, 0));
+        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+        extruded.Dispose();
 
         MakeMesh();
 
@@ -46,9 +55,9 @@ public struct TreeGenerator
         cellVertices.Dispose();
     }
 
-    NativeArray<float3> TrunkVertices(float size)
+    NativeArray<int> TrunkVertices(float size)
     {
-        NativeList<float3> trunkVertices = new NativeList<float3>(Allocator.Temp);
+        NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
         for(int i = 0; i < cellVertices.Length; i++)
         {
             int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
@@ -60,12 +69,14 @@ public struct TreeGenerator
                 continue;
 
             float3 trunkVertex = (cell.position + currentVertex) * size;
-            trunkVertices.Add(trunkVertex);
+
+            vertices.Add(trunkVertex);
+            trunkIndices.Add(vertices.Length-1);
         }
 
-        NativeArray<float3> vertexArray = new NativeArray<float3>(trunkVertices.Length, Allocator.Temp);
-        vertexArray.CopyFrom(trunkVertices);
-        trunkVertices.Dispose();
+        NativeArray<int> vertexArray = new NativeArray<int>(trunkIndices.Length, Allocator.Temp);
+        vertexArray.CopyFrom(trunkIndices);
+        trunkIndices.Dispose();
 
         return vertexArray;
     }
@@ -91,16 +102,16 @@ public struct TreeGenerator
 
         for(int i = 0; i < edgeCount; i++)
         {
-            int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == edgeCount-1 ? 0 : i+1);
+            int currentEdge = i;
+            int nextEdge = i == edgeCount-1 ? 0 : i+1;
 
             triangles.Add(startIndices[currentEdge]);
             triangles.Add(startIndices[nextEdge]);
             triangles.Add(endIndices[currentEdge]);
 
-            triangles.Add(endIndices[currentEdge]);
-            triangles.Add(endIndices[nextEdge]);
             triangles.Add(startIndices[nextEdge]);
+            triangles.Add(endIndices[nextEdge]);
+            triangles.Add(endIndices[currentEdge]);
         }
 
         return endIndices;
