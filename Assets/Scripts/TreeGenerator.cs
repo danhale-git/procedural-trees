@@ -68,7 +68,43 @@ public struct TreeGenerator
         trunkVertices.Dispose();
 
         return vertexArray;
-    } 
+    }
+
+    NativeArray<int> ExtrudeTrunk2(NativeArray<int> startIndices, float3 extrusion)
+    {
+        int edgeCount = startIndices.Length;
+
+        NativeArray<int> endIndices = new NativeArray<int>(startIndices.Length, Allocator.Temp);
+
+        NativeArray<float3> startVertices = new NativeArray<float3>(startIndices.Length, Allocator.Temp);
+        NativeArray<float3> endVertices = new NativeArray<float3>(startIndices.Length, Allocator.Temp);
+
+        for(int i = 0; i < edgeCount; i++)
+        {
+            float3 startVertex = vertices[startIndices[i]];
+            startVertices[i] = startVertex;
+            
+            float3 endVertex = startVertex + extrusion;
+            vertices.Add(endVertex);
+            endIndices[i] = vertices.Length-1;
+        }
+
+        for(int i = 0; i < edgeCount; i++)
+        {
+            int currentEdge = vertexIndex + i;
+            int nextEdge = vertexIndex + (i == edgeCount-1 ? 0 : i+1);
+
+            triangles.Add(startIndices[currentEdge]);
+            triangles.Add(startIndices[nextEdge]);
+            triangles.Add(endIndices[currentEdge]);
+
+            triangles.Add(endIndices[currentEdge]);
+            triangles.Add(endIndices[nextEdge]);
+            triangles.Add(startIndices[nextEdge]);
+        }
+
+        return endIndices;
+    }
 
     NativeArray<float3> ExtrudeTrunk(NativeArray<float3> extrudeFrom, float3 extrusion)
     {
