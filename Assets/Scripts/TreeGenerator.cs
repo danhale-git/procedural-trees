@@ -38,21 +38,14 @@ public struct TreeGenerator
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex);
 
-        Tree(cellIndex);
-
-        cellVertices.Dispose();
-    }
-
-    void Tree(int2 cellIndex)
-    {
         DrawCell(cellVertices, cell.position);
-
         Extrude(cellVertices, new float3(0, 10, 3));
 
         MakeMesh();
 
         vertices.Dispose();
         triangles.Dispose();
+        cellVertices.Dispose();
     }
 
     NativeArray<float3> Extrude(NativeArray<float3> extrudeFrom, float3 extrusion)
@@ -88,7 +81,6 @@ public struct TreeGenerator
 
         return extrudeTo;
     }
-
 
     void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
     {
@@ -131,6 +123,7 @@ public struct TreeGenerator
         meshFilter.mesh = mesh;
 
         float3 randomColor = random.NextFloat3();
-        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
+        //meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
+        meshRenderer.material.color = new Color(.9f,.9f,.9f);
     }
 }
