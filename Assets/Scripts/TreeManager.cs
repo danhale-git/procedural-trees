@@ -47,8 +47,9 @@ public class TreeManager : MonoBehaviour
             material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")
         };
 
-        for(int x = -1; x < 2; x++)
-            for(int z = -1; z < 2; z++)
+        int range = 2;
+        for(int x = -range; x <= range; x++)
+            for(int z = -range; z <= range; z++)
             {
                 int2 index = new int2(x, z) * 2;
                 generator.Generate(index);
