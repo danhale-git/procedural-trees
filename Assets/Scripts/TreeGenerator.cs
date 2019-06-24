@@ -32,7 +32,7 @@ public struct TreeGenerator
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
 
-        NativeArray<int> extruded = TrunkVertices(1.5f);
+        NativeArray<int> extruded = TrunkVertices(0.2f);
 
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 1, 0), 0.4f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
@@ -54,23 +54,22 @@ public struct TreeGenerator
         {
             int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
             
-            float3 currentVertex = math.normalize(cellVertices[i] - cell.position);
-            float3 nextVertex = math.normalize(cellVertices[nextIndex] - cell.position);
+            float3 currentVertex = cellVertices[i] - cell.position;
+            float3 nextVertex = cellVertices[nextIndex] - cell.position;
 
             if(vectorUtil.Angle(currentVertex, nextVertex) < 20)
                 continue;
 
-            float3 trunkVertex = currentVertex*size;
+            float3 trunkVertex = currentVertex * size;
 
             vertices.Add(trunkVertex);
             trunkIndices.Add(vertices.Length-1);
         }
 
-        NativeArray<int> vertexArray = new NativeArray<int>(trunkIndices.Length, Allocator.Temp);
-        vertexArray.CopyFrom(trunkIndices);
+        NativeArray<int> indexArray = new NativeArray<int>(trunkIndices.Length, Allocator.Temp);
+        indexArray.CopyFrom(trunkIndices);
         trunkIndices.Dispose();
-
-        return vertexArray;
+        return indexArray;
     }
 
     NativeArray<int> ExtrudeTrunk(NativeArray<int> startIndices, float3 extrusion, float scale)
@@ -82,8 +81,7 @@ public struct TreeGenerator
         for(int i = 0; i < edgeCount; i++)
         {
             float3 startVertex = vertices[startIndices[i]];
-            float3 distanceFromCell = startVertex;
-            float3 endVertex = (distanceFromCell * scale) + extrusion;
+            float3 endVertex = (startVertex * scale) + extrusion;
 
             vertices.Add(endVertex);
             endIndices[i] = vertices.Length-1;
@@ -145,8 +143,8 @@ public struct TreeGenerator
         meshFilter.mesh = mesh;
 
         float3 randomColor = random.NextFloat3();
-        //meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
-        meshRenderer.material.color = new Color(.9f,.9f,.9f);
+        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
+        //meshRenderer.material.color = new Color(.9f,.9f,.9f);
 
         meshObject.transform.Translate(cell.position);
     }
