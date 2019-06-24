@@ -60,7 +60,7 @@ public struct TreeGenerator
             if(vectorUtil.Angle(currentVertex, nextVertex) < 20)
                 continue;
 
-            float3 trunkVertex = (cell.position + (currentVertex*size));
+            float3 trunkVertex = currentVertex*size;
 
             vertices.Add(trunkVertex);
             trunkIndices.Add(vertices.Length-1);
@@ -82,8 +82,8 @@ public struct TreeGenerator
         for(int i = 0; i < edgeCount; i++)
         {
             float3 startVertex = vertices[startIndices[i]];
-            float3 distanceFromCell = startVertex - cell.position;
-            float3 endVertex = cell.position + (distanceFromCell * scale) + extrusion;
+            float3 distanceFromCell = startVertex;
+            float3 endVertex = (distanceFromCell * scale) + extrusion;
 
             vertices.Add(endVertex);
             endIndices[i] = vertices.Length-1;
@@ -108,12 +108,12 @@ public struct TreeGenerator
 
     void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
     {
-        vertices.Add(cellCenterPosition);
+        vertices.Add(float3.zero);
         int cellCenter = vertices.Length-1;
         int vertexIndex = vertices.Length;
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
-            vertices.Add(worleyCellEdge[i]);
+            vertices.Add(worleyCellEdge[i] - cell.position);
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
         {
@@ -147,5 +147,7 @@ public struct TreeGenerator
         float3 randomColor = random.NextFloat3();
         //meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
         meshRenderer.material.color = new Color(.9f,.9f,.9f);
+
+        meshObject.transform.Translate(cell.position);
     }
 }
