@@ -31,21 +31,15 @@ public struct TreeGenerator
 
         DrawCell(cellVertices, cell.position);
 
-        float3 min = new float3(-2, 0, -2);
-        float3 max = new float3(2, 0, 2);
+        float3 min = new float3(-1, 0, -1);
+        float3 max = new float3(1, 0, 1);
 
-        /*vertices.AddRange();
-        NativeArray<int> extruded = new NativeArray<int>(vertices.Length, Allocator.Temp);
-        for(int i = 0; i < vertices.Length; i++)
-        {
-            extruded[i] = i;
-        } */
+        NativeArray<int> extruded = TrunkVertices(1.5f);
 
-        NativeArray<int> extruded = TrunkVertices(1);
-
-        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 4, 0));
-        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
-        extruded = ExtrudeTrunk2(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0));
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 1, 0), 0.4f);
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
+        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded.Dispose();
 
         MakeMesh();
@@ -54,6 +48,8 @@ public struct TreeGenerator
         triangles.Dispose();
         cellVertices.Dispose();
     }
+
+
 
     NativeArray<int> TrunkVertices(float size)
     {
@@ -68,7 +64,7 @@ public struct TreeGenerator
             if(vectorUtil.Angle(currentVertex, nextVertex) < 20)
                 continue;
 
-            float3 trunkVertex = (cell.position + currentVertex) * size;
+            float3 trunkVertex = (cell.position + (currentVertex*size));
 
             vertices.Add(trunkVertex);
             trunkIndices.Add(vertices.Length-1);
@@ -81,7 +77,7 @@ public struct TreeGenerator
         return vertexArray;
     }
 
-    NativeArray<int> ExtrudeTrunk2(NativeArray<int> startIndices, float3 extrusion)
+    NativeArray<int> ExtrudeTrunk(NativeArray<int> startIndices, float3 extrusion, float scale)
     {
         int edgeCount = startIndices.Length;
 
@@ -94,8 +90,10 @@ public struct TreeGenerator
         {
             float3 startVertex = vertices[startIndices[i]];
             startVertices[i] = startVertex;
+
+            float3 distanceFromCell = startVertex - cell.position;
             
-            float3 endVertex = startVertex + extrusion;
+            float3 endVertex = cell.position + (distanceFromCell * scale) + extrusion;
             vertices.Add(endVertex);
             endIndices[i] = vertices.Length-1;
         }
@@ -115,40 +113,6 @@ public struct TreeGenerator
         }
 
         return endIndices;
-    }
-
-    NativeArray<float3> ExtrudeTrunk(NativeArray<float3> extrudeFrom, float3 extrusion)
-    {
-        int vertCount = extrudeFrom.Length;
-        NativeArray<float3> extrudeTo = new NativeArray<float3>(extrudeFrom.Length, Allocator.Temp);
-
-        for(int i = 0; i < extrudeFrom.Length; i++)
-            this.vertices.Add(extrudeFrom[i]);
-
-        for(int i = 0; i < extrudeFrom.Length; i++)
-        {
-            float3 vertex = extrudeFrom[i] + extrusion;
-            this.vertices.Add(vertex);
-            extrudeTo[i] = vertex;
-        }
-
-        for(int i = 0; i < extrudeFrom.Length; i++)
-        {
-            int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == extrudeFrom.Length-1 ? 0 : i+1);
-
-            triangles.Add(currentEdge);
-            triangles.Add(nextEdge);
-            triangles.Add(currentEdge+vertCount);
-
-            triangles.Add(currentEdge+vertCount);
-            triangles.Add(nextEdge);
-            triangles.Add(nextEdge+vertCount);
-        }
-
-        vertexIndex += vertCount*2;
-
-        return extrudeTo;
     }
 
     void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
