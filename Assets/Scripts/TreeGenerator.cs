@@ -16,7 +16,6 @@ public struct TreeGenerator
 
     NativeList<float3> vertices;
     NativeList<int> triangles;
-    int vertexIndex;
 
     VectorUtil vectorUtil;
     
@@ -24,7 +23,6 @@ public struct TreeGenerator
     {
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
-        vertexIndex = 0;
         
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex);
@@ -48,8 +46,6 @@ public struct TreeGenerator
         triangles.Dispose();
         cellVertices.Dispose();
     }
-
-
 
     NativeArray<int> TrunkVertices(float size)
     {
@@ -83,17 +79,12 @@ public struct TreeGenerator
 
         NativeArray<int> endIndices = new NativeArray<int>(startIndices.Length, Allocator.Temp);
 
-        NativeArray<float3> startVertices = new NativeArray<float3>(startIndices.Length, Allocator.Temp);
-        NativeArray<float3> endVertices = new NativeArray<float3>(startIndices.Length, Allocator.Temp);
-
         for(int i = 0; i < edgeCount; i++)
         {
             float3 startVertex = vertices[startIndices[i]];
-            startVertices[i] = startVertex;
-
             float3 distanceFromCell = startVertex - cell.position;
-            
             float3 endVertex = cell.position + (distanceFromCell * scale) + extrusion;
+
             vertices.Add(endVertex);
             endIndices[i] = vertices.Length-1;
         }
@@ -117,9 +108,9 @@ public struct TreeGenerator
 
     void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
     {
-        int cellCenter = vertexIndex;
         vertices.Add(cellCenterPosition);
-        vertexIndex++;
+        int cellCenter = vertices.Length-1;
+        int vertexIndex = vertices.Length;
 
         for(int i = 0; i < worleyCellEdge.Length; i++)
             vertices.Add(worleyCellEdge[i]);
@@ -133,8 +124,6 @@ public struct TreeGenerator
             triangles.Add(nextEdge);
             triangles.Add(cellCenter);            
         }
-
-        vertexIndex += worleyCellEdge.Length;
     }
 
     void MakeMesh()
