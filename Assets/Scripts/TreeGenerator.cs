@@ -18,16 +18,7 @@ public struct TreeGenerator
     NativeList<int> triangles;
     int vertexIndex;
 
-    /*struct Vertex
-    {
-        public readonly float3 position;
-        public readonly int index;
-        public Vertex(float3 position, int index)
-        {
-            this.position = position;
-            this.index = index;
-        }
-    } */
+    VectorUtil vectorUtil;
     
     public void Generate(int2 cellIndex)
     {
@@ -39,7 +30,7 @@ public struct TreeGenerator
         cellVertices = worley.GetCellVertices(cellIndex);
 
         DrawCell(cellVertices, cell.position);
-        Extrude(cellVertices, new float3(0, 10, 3));
+        Extrude(TrunkVertices(), new float3(0, 10, 0));
 
         MakeMesh();
 
@@ -47,6 +38,27 @@ public struct TreeGenerator
         triangles.Dispose();
         cellVertices.Dispose();
     }
+
+    NativeArray<float3> TrunkVertices()
+    {
+        NativeList<float3> trunkVertices = new NativeList<float3>(Allocator.Temp);
+        for(int i = 0; i < cellVertices.Length; i++)
+        {
+            int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
+            
+            float3 currentVertex = math.normalize(cellVertices[i] - cell.position);
+            float3 nextVertex = math.normalize(cellVertices[nextIndex] - cell.position);
+
+            if(vectorUtil.Angle(currentVertex, nextVertex) > 20)
+                trunkVertices.Add(cellVertices[i]);
+        }
+
+        NativeArray<float3> vertexArray = new NativeArray<float3>(trunkVertices.Length, Allocator.Temp);
+        vertexArray.CopyFrom(trunkVertices);
+        trunkVertices.Dispose();
+
+        return vertexArray;
+    } 
 
     NativeArray<float3> Extrude(NativeArray<float3> extrudeFrom, float3 extrusion)
     {
