@@ -1,6 +1,6 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
-using UnityEngine;
+using System;
 
 public struct WorleyNoise
 {
@@ -27,10 +27,13 @@ public struct WorleyNoise
 		seed = math.abs(newSeed);
 	}
 
-	public struct CellData
+	public struct CellData : IComparable<CellData>, IEquatable<CellData>
 	{
 		public int CompareTo(CellData other)
 		{ return value.CompareTo(other.value); }
+
+		public bool Equals(CellData other)
+		{ return this.index.Equals(other.index); }
 
 		public float value;
 		public int2 index;

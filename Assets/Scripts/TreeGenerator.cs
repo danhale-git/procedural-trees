@@ -23,18 +23,17 @@ public struct TreeGenerator
     {
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
-        
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex);
 
-        DrawCell(cellVertices, cell.position);
-
+        //Draw other cell
+        DrawLeaves(4, worley.frequency*3);
+        DrawLeaves(7, worley.frequency*2);
+        
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
-
         NativeArray<int> extruded = TrunkVertices(0.2f);
-
-        extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 1, 0), 0.4f);
+        extruded = ExtrudeTrunk(extruded, new float3(0, 1, 0), 0.4f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
@@ -104,24 +103,82 @@ public struct TreeGenerator
         return endIndices;
     }
 
-    void DrawCell(NativeArray<float3> worleyCellEdge, float3 cellCenterPosition)
+    void DrawLeaves(float height, float2 frequency)
     {
-        vertices.Add(float3.zero);
+        WorleyNoise newWorley = worley;
+        newWorley.frequency = frequency;
+        newWorley.seed = random.NextInt();
+        NativeList<WorleyNoise.CellData> children = GetChildCells(newWorley);
+        for(int i = 0; i < children.Length; i++)
+        {
+            WorleyNoise.CellData childCell = children[i];
+            DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
+        }
+    }
+
+    NativeList<WorleyNoise.CellData> GetChildCells(WorleyNoise newWorley)
+    {
+        var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
+        var alreadyChecked = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+        var children = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+
+        WorleyNoise.CellData startCell = newWorley.GetCellData(cell.position);
+        checkNext.Enqueue(startCell);
+        alreadyChecked.Add(startCell);
+
+        while(checkNext.Count > 0)
+        {
+            WorleyNoise.CellData newCell = checkNext.Dequeue();
+
+            WorleyNoise.CellData dataFromParent = worley.GetCellData(newCell.position);
+            bool cellInParent = dataFromParent.index.Equals(cell.index);
+
+            if(!cellInParent)
+                continue;
+
+            children.Add(newCell);
+
+            AdjacentIntOffsetsClockwise adjacentIndices;
+
+            for(int i = 0; i < 8; i++)
+            {
+                WorleyNoise.CellData adjacentCell = newWorley.GetCellData(newCell.index + adjacentIndices[i]);
+                if(!alreadyChecked.Contains(adjacentCell))
+                {
+                    alreadyChecked.Add(adjacentCell);
+                    checkNext.Enqueue(adjacentCell);
+                }
+            }
+        }
+
+        checkNext.Dispose();
+        alreadyChecked.Dispose();
+
+        return children;
+    }
+
+    void DrawCell(NativeArray<float3> cellEdgeVertexPositions, float3 cellPosition, float height = 0)
+    {
+        float3 yOffset = new float3(0, height, 0);
+        //float3 centerPositionInMesh = cellPosition - cell.position;
+        vertices.Add(cellPosition - cell.position + yOffset);
         int cellCenter = vertices.Length-1;
         int vertexIndex = vertices.Length;
 
-        for(int i = 0; i < worleyCellEdge.Length; i++)
-            vertices.Add(worleyCellEdge[i] - cell.position);
-
-        for(int i = 0; i < worleyCellEdge.Length; i++)
+        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
+            vertices.Add((cellEdgeVertexPositions[i] + yOffset) - cell.position);
+            
+        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
         {
             int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == worleyCellEdge.Length-1 ? 0 : i+1);
+            int nextEdge = vertexIndex + (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
 
             triangles.Add(currentEdge);
             triangles.Add(nextEdge);
             triangles.Add(cellCenter);            
         }
+
+        cellEdgeVertexPositions.Dispose();
     }
 
     void MakeMesh()
