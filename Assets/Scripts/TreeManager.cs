@@ -41,7 +41,6 @@ public class TreeManager : MonoBehaviour
 
         TreeGenerator generator = new TreeGenerator
         {
-            random = this.random,
             worley = this.worley,
             meshPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TreeMesh.prefab"),
             material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")

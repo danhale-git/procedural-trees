@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 public struct TreeGenerator
 {
-    public Unity.Mathematics.Random random;
     public WorleyNoise worley;
     public GameObject meshPrefab;
     public Material material;
@@ -17,6 +16,7 @@ public struct TreeGenerator
     NativeList<float3> vertices;
     NativeList<int> triangles;
 
+    Unity.Mathematics.Random random;
     VectorUtil vectorUtil;
     
     public void Generate(int2 cellIndex)
@@ -25,6 +25,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex);
+        random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
         DrawLeaves(4, worley.frequency*3);
@@ -116,7 +117,7 @@ public struct TreeGenerator
             DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
         }
     }
-
+    
     NativeList<WorleyNoise.CellData> GetChildCells(WorleyNoise newWorley)
     {
         WorleyNoise.CellData startCell = newWorley.GetCellData(cell.position);
