@@ -28,8 +28,8 @@ public struct TreeGenerator
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
-        DrawLeaves(4, worley.frequency*3);
         DrawLeaves(7, worley.frequency*2);
+        DrawLeavesInSegment(4, worley.frequency*3);
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
@@ -110,15 +110,75 @@ public struct TreeGenerator
         newWorley.frequency = frequency;
         newWorley.seed = random.NextInt();
 
-        NativeList<WorleyNoise.CellData> children = GetChildCells(newWorley);
+        NativeList<WorleyNoise.CellData> children = GetCellChildren(newWorley);
         for(int i = 0; i < children.Length; i++)
         {
             WorleyNoise.CellData childCell = children[i];
             DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
         }
     }
-    
-    NativeList<WorleyNoise.CellData> GetChildCells(WorleyNoise newWorley)
+
+    void DrawLeavesInSegment(float height, float2 frequency)
+    {
+        WorleyNoise newWorley = worley;
+        newWorley.frequency = frequency;
+        newWorley.seed = random.NextInt();
+
+        NativeList<WorleyNoise.CellData> children = GetSegmentChildren(newWorley);
+        for(int i = 0; i < children.Length; i++)
+        {
+            WorleyNoise.CellData childCell = children[i];
+            DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
+        }
+    }
+
+    NativeList<WorleyNoise.CellData> GetSegmentChildren(WorleyNoise newWorley)
+    {
+        //TODO handle segment randomisation
+        float3 positionInSegment = new float3(1, 0, 1) + cell.position;
+
+        WorleyNoise.CellData startCell = newWorley.GetCellData(positionInSegment);
+
+        var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
+        var alreadyChecked = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+        checkNext.Enqueue(startCell);
+        alreadyChecked.Add(startCell);
+
+        var children = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+        while(checkNext.Count > 0)
+        {
+            WorleyNoise.CellData newCell = checkNext.Dequeue();
+
+            WorleyNoise.CellData dataFromParent = worley.GetCellData(newCell.position);
+            bool cellInParent = dataFromParent.index.Equals(cell.index);
+            float rotation = vectorUtil.RotationFromUp(Float3To2(newCell.position), Float3To2(cell.position));
+            //TODO Randomise segment, not just 90 from up
+            bool cellIsInSegment = rotation < 90;
+
+            if(!cellInParent || !cellIsInSegment)
+                continue;
+
+            children.Add(newCell);
+
+            AdjacentIntOffsetsClockwise adjacentIndices;
+            for(int i = 0; i < 8; i++)
+            {
+                WorleyNoise.CellData adjacentCell = newWorley.GetCellData(newCell.index + adjacentIndices[i]);
+                if(!alreadyChecked.Contains(adjacentCell))
+                {
+                    checkNext.Enqueue(adjacentCell);
+                    alreadyChecked.Add(adjacentCell);
+                }
+            }
+        }
+
+        checkNext.Dispose();
+        alreadyChecked.Dispose();
+
+        return children;
+    }
+
+    NativeList<WorleyNoise.CellData> GetCellChildren(WorleyNoise newWorley)
     {
         WorleyNoise.CellData startCell = newWorley.GetCellData(cell.position);
 
@@ -204,5 +264,10 @@ public struct TreeGenerator
         //meshRenderer.material.color = new Color(.9f,.9f,.9f);
 
         meshObject.transform.Translate(cell.position);
+    }
+
+    float2 Float3To2(float3 f)
+    {
+        return new float2(f.x, f.z);
     }
 }
