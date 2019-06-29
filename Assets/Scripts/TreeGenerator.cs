@@ -28,8 +28,8 @@ public struct TreeGenerator
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
-        DrawLeaves(7, worley.frequency*2);
-        DrawLeavesInSegment(4, worley.frequency*3);
+        Crown(8, worley.frequency*2);
+        //DrawLeavesInSegment(4, worley.frequency*3);
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
@@ -104,17 +104,18 @@ public struct TreeGenerator
         return endIndices;
     }
 
-    void DrawLeaves(float height, float2 frequency)
+    void Crown(float height, float2 frequency)
     {
         WorleyNoise newWorley = worley;
         newWorley.frequency = frequency;
-        newWorley.seed = random.NextInt();
 
         NativeList<WorleyNoise.CellData> children = GetCellChildren(newWorley);
         for(int i = 0; i < children.Length; i++)
         {
-            WorleyNoise.CellData childCell = children[i];
-            DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
+            NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index);
+            float3 meanPoint = vectorUtil.MeanPoint(edgeVertices);
+            //TODO process vertices and center y axis point here
+            DrawCell(edgeVertices, meanPoint);
         }
     }
 
@@ -128,7 +129,7 @@ public struct TreeGenerator
         for(int i = 0; i < children.Length; i++)
         {
             WorleyNoise.CellData childCell = children[i];
-            DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position, height);
+            DrawCell(newWorley.GetCellVertices(childCell.index), childCell.position);
         }
     }
 
@@ -218,15 +219,16 @@ public struct TreeGenerator
         return children;
     }
 
-    void DrawCell(NativeArray<float3> cellEdgeVertexPositions, float3 cellPosition, float height = 0)
+    void DrawCell(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition)
     {
-        float3 yOffset = new float3(0, height, 0);
-        vertices.Add(cellPosition - cell.position + yOffset + /*DEBUG */new float3(0,1,0));
+        float3 centerVertex = centerPosition - cell.position;
+        vertices.Add(centerVertex);
+
         int cellCenter = vertices.Length-1;
         int vertexIndex = vertices.Length;
 
         for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-            vertices.Add((cellEdgeVertexPositions[i] + yOffset) - cell.position);
+            vertices.Add(cellEdgeVertexPositions[i] - cell.position);
             
         for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
         {

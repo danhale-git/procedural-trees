@@ -49,6 +49,15 @@ public struct VectorUtil
         return sum /= points.Length;
     }
 
+    public float3 MeanPoint(NativeArray<float3> points)
+    {
+        float3 sum = float3.zero;
+        for(int i = 0; i < points.Length; i++)
+            sum += points[i];
+
+        return sum /= points.Length;
+    }
+
     public float RotationFromUp(float2 position, float2 center)
     {
         float2 direction = position - center;
