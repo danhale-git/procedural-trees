@@ -14,7 +14,6 @@ public struct TreeGenerator
     NativeArray<float3> cellVertices;
 
     NativeList<float3> vertices;
-    NativeList<float3> normals;
     NativeList<int> triangles;
 
     Unity.Mathematics.Random random;
@@ -23,7 +22,6 @@ public struct TreeGenerator
     public void Generate(int2 cellIndex)
     {
         vertices = new NativeList<float3>(Allocator.Temp);
-        normals = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
@@ -46,7 +44,6 @@ public struct TreeGenerator
         MakeMesh();
 
         vertices.Dispose();
-        normals.Dispose();
         triangles.Dispose();
         cellVertices.Dispose();
     }
@@ -67,8 +64,6 @@ public struct TreeGenerator
             float3 trunkVertex = currentVertex * size;
 
             vertices.Add(trunkVertex);
-            float3 normal = trunkVertex - cell.position;
-            normals.Add(normal);
             trunkIndices.Add(vertices.Length-1);
         }
 
@@ -90,9 +85,6 @@ public struct TreeGenerator
             float3 endVertex = (startVertex * scale) + extrusion;
 
             vertices.Add(endVertex);
-            float3 normal = endVertex - cell.position;
-            normal.y = 0;
-            normals.Add(normal);
             endIndices[i] = vertices.Length-1;
         }
 
@@ -256,14 +248,13 @@ public struct TreeGenerator
         cellEdgeVertexPositions.Dispose();
     }
 
-    void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
+    /*void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
     {
         float centerYOffset = FarthestEdgeVertex(cellEdgeVertexPositions, centerPosition) * 0.25f;
 
         float3 centerVertex = centerPosition - cell.position;
         centerVertex.y += height + centerYOffset - (math.length(centerVertex) * 0.5f);
         vertices.Add(centerVertex);
-        normals.Add(new float3(0, 1, 0));        
 
         int cellCenter = vertices.Length-1;
         int vertexIndex = vertices.Length;
@@ -273,8 +264,6 @@ public struct TreeGenerator
             float3 vertex = cellEdgeVertexPositions[i] - cell.position;
             vertex.y += height - (math.length(vertex) * 0.5f);
             vertices.Add(vertex);
-
-            normals.Add(math.normalize(cellEdgeVertexPositions[i] - centerPosition) + new float3(0, 0.25f, 0));
         }
             
         for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
@@ -288,6 +277,57 @@ public struct TreeGenerator
         }
 
         cellEdgeVertexPositions.Dispose();
+    } */
+
+    void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
+    {
+        float3 center = centerPosition - cell.position;
+        center.y += height;
+
+        int cellCenter = vertices.Length-1;
+        int vertexIndex = vertices.Length;
+
+        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
+        {
+            int currentEdge = i;
+            int nextEdge = (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
+
+            float3 current = cellEdgeVertexPositions[currentEdge] - cell.position;
+            float3 next = cellEdgeVertexPositions[nextEdge] - cell.position;
+
+            float drop = math.length(current) * 0.5f;
+
+            current.y += height;
+            next.y += height;
+
+            float3 edgeMidPoint = vectorUtil.MidPoint(current, next);
+            float3 currentMidPoint = vectorUtil.MidPoint(center, current);
+            float3 nextMidPoint = vectorUtil.MidPoint(center, next);
+
+            VertAndTri(current);
+            VertAndTri(edgeMidPoint);
+            VertAndTri(currentMidPoint);
+            
+            VertAndTri(edgeMidPoint);
+            VertAndTri(next);
+            VertAndTri(nextMidPoint);
+
+            VertAndTri(currentMidPoint);
+            VertAndTri(edgeMidPoint);
+            VertAndTri(nextMidPoint);
+
+            VertAndTri(currentMidPoint);
+            VertAndTri(nextMidPoint);
+            VertAndTri(center);
+        }
+
+        cellEdgeVertexPositions.Dispose();
+    }
+
+    void VertAndTri(float3 vert)
+    {
+        vertices.Add(vert);
+        triangles.Add(vertices.Length-1);
     }
 
     float FarthestEdgeVertex(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition)
@@ -308,19 +348,14 @@ public struct TreeGenerator
         for(int i = 0; i < vertices.Length; i++)
             vertexList.Add(vertices[i]);
 
-        List<Vector3> normalList = new List<Vector3>();
-        for(int i = 0; i < normals.Length; i++)
-            normalList.Add(normals[i]);
-
         GameObject meshObject = GameObject.Instantiate(meshPrefab);
         MeshFilter meshFilter = meshObject.GetComponent<MeshFilter>();
         MeshRenderer meshRenderer = meshObject.GetComponent<MeshRenderer>();
 
         Mesh mesh = new Mesh();
         mesh.SetVertices(vertexList);
-        mesh.SetNormals(normalList);
         mesh.triangles = triangles.ToArray();
-        //mesh.RecalculateNormals();
+        mesh.RecalculateNormals();
 
         meshRenderer.material = this.material;
         meshFilter.mesh = mesh;
