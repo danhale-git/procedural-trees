@@ -27,7 +27,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
-        cellVertices = worley.GetCellVertices(cellIndex);
+        cellVertices = worley.GetCellVertices(cellIndex, UnityEngine.Color.blue);
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
@@ -121,7 +121,7 @@ public struct TreeGenerator
         NativeList<WorleyNoise.CellData> children = GetCellChildren(newWorley);
         for(int i = 0; i < children.Length; i++)
         {
-            NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index);
+            NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index, UnityEngine.Color.green);
             float3 meanPoint = vectorUtil.MeanPoint(edgeVertices);
             //TODO process vertices and center y axis point here
             DrawLeaves(edgeVertices, meanPoint, height);
@@ -142,7 +142,7 @@ public struct TreeGenerator
         for(int i = 0; i < children.Length; i++)
         {
             WorleyNoise.CellData childCell = children[i];
-            DrawLeaves(newWorley.GetCellVertices(childCell.index), childCell.position, height);
+            DrawLeaves(newWorley.GetCellVertices(childCell.index, UnityEngine.Color.red), childCell.position, height);
         }
     }
 
