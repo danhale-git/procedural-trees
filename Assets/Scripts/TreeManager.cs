@@ -50,7 +50,7 @@ public class TreeManager : MonoBehaviour
         for(int x = -range; x <= range; x++)
             for(int z = -range; z <= range; z++)
             {
-                int2 index = new int2(x, z) * 2;
+                int2 index = new int2(x, z);
                 generator.Generate(index);
             }
 

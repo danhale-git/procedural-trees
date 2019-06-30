@@ -248,40 +248,11 @@ public struct TreeGenerator
         cellEdgeVertexPositions.Dispose();
     }
 
-    /*void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
-    {
-        float centerYOffset = FarthestEdgeVertex(cellEdgeVertexPositions, centerPosition) * 0.25f;
-
-        float3 centerVertex = centerPosition - cell.position;
-        centerVertex.y += height + centerYOffset - (math.length(centerVertex) * 0.5f);
-        vertices.Add(centerVertex);
-
-        int cellCenter = vertices.Length-1;
-        int vertexIndex = vertices.Length;
-
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            float3 vertex = cellEdgeVertexPositions[i] - cell.position;
-            vertex.y += height - (math.length(vertex) * 0.5f);
-            vertices.Add(vertex);
-        }
-            
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
-
-            triangles.Add(currentEdge);
-            triangles.Add(nextEdge);
-            triangles.Add(cellCenter);            
-        }
-
-        cellEdgeVertexPositions.Dispose();
-    } */
-
     void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
     {
-        float3 center = centerPosition - cell.position;
+        float drop = math.length(FarthestEdgeVertex(cellEdgeVertexPositions, centerPosition)) * 0.4f;
+
+        float3 center = centerPosition - cell.position + (drop * 0.5f);
         center.y += height;
 
         int cellCenter = vertices.Length-1;
@@ -295,14 +266,19 @@ public struct TreeGenerator
             float3 current = cellEdgeVertexPositions[currentEdge] - cell.position;
             float3 next = cellEdgeVertexPositions[nextEdge] - cell.position;
 
-            float drop = math.length(current) * 0.5f;
+            //current = vectorUtil.MidPoint(center, current, 0.9f);
+            //next = vectorUtil.MidPoint(center, next, 0.9f);
 
             current.y += height;
             next.y += height;
 
+            float3 currentMidPoint = vectorUtil.MidPoint(center, current, 0.6f);
+            float3 nextMidPoint = vectorUtil.MidPoint(center, next, 0.6f);
+            
+            current.y -= drop;
+            next.y -= drop;
+            
             float3 edgeMidPoint = vectorUtil.MidPoint(current, next);
-            float3 currentMidPoint = vectorUtil.MidPoint(center, current);
-            float3 nextMidPoint = vectorUtil.MidPoint(center, next);
 
             VertAndTri(current);
             VertAndTri(edgeMidPoint);
@@ -319,6 +295,19 @@ public struct TreeGenerator
             VertAndTri(currentMidPoint);
             VertAndTri(nextMidPoint);
             VertAndTri(center);
+
+            float3 currentBottom = current;
+            float3 nextBottom = next;
+            currentBottom.y -= drop;
+            nextBottom.y -= drop;
+
+            VertAndTri(current);
+            VertAndTri(currentBottom);
+            VertAndTri(next);
+            
+            VertAndTri(currentBottom);
+            VertAndTri(nextBottom);
+            VertAndTri(next);
         }
 
         cellEdgeVertexPositions.Dispose();

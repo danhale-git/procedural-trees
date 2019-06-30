@@ -58,14 +58,14 @@ public struct VectorUtil
         return sum /= points.Length;
     }
 
-    public float2 MidPoint(float2 a, float2 b)
+    public float2 MidPoint(float2 a, float2 b, float offset = 0.5f)
     {
-        return a + ((b-a) * 0.5f);
+        return a + ((b-a) * offset);
     }
 
-    public float3 MidPoint(float3 a, float3 b)
+    public float3 MidPoint(float3 a, float3 b, float offset = 0.5f)
     {
-        return a + ((b-a) * 0.5f);
+        return a + ((b-a) * offset);
     }
 
     public float RotationFromUp(float2 position, float2 center)
