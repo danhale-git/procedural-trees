@@ -29,7 +29,7 @@ public class TreeManager : MonoBehaviour
 
         worley = new WorleyNoise()
         {
-            frequency = 0.1f,
+            frequency = 0.075f,
             seed = random.NextInt(),
             perterbAmp = 0,
             cellularJitter = 0.3f,
@@ -50,7 +50,7 @@ public class TreeManager : MonoBehaviour
         for(int x = -range; x <= range; x++)
             for(int z = -range; z <= range; z++)
             {
-                int2 index = new int2(x, z);
+                int2 index = new int2(x, z) * 2;
                 generator.Generate(index);
             }
 
