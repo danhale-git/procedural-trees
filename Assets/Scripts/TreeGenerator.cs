@@ -34,7 +34,7 @@ public struct TreeGenerator
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
-        NativeArray<int> extruded = TrunkVertices(0.2f);
+        NativeArray<int> extruded = TrunkVertices(0.2f, 20);
         extruded = ExtrudeTrunk(extruded, new float3(0, 1, 0), 0.4f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
@@ -48,7 +48,7 @@ public struct TreeGenerator
         cellVertices.Dispose();
     }
 
-    NativeArray<int> TrunkVertices(float size)
+    NativeArray<int> TrunkVertices(float size, int minAngle)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
         for(int i = 0; i < cellVertices.Length; i++)
@@ -58,7 +58,7 @@ public struct TreeGenerator
             float3 currentVertex = cellVertices[i] - cell.position;
             float3 nextVertex = cellVertices[nextIndex] - cell.position;
 
-            if(vectorUtil.Angle(currentVertex, nextVertex) < 20)
+            if(vectorUtil.Angle(currentVertex, nextVertex) < minAngle)
                 continue;
 
             float3 trunkVertex = currentVertex * size;
@@ -258,27 +258,35 @@ public struct TreeGenerator
         int cellCenter = vertices.Length-1;
         int vertexIndex = vertices.Length;
 
+        const float jitter = 0.4f;
+
+        float3 currentJitter = random.NextFloat3(-jitter, jitter);
+        float3 currentMidJitter = random.NextFloat3(-jitter, jitter);
+        float3 zeroJitter = currentJitter;
+        float3 zeroMidJitter = currentMidJitter;
         for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
         {
+            bool final = i == cellEdgeVertexPositions.Length-1;
+            
+            float3 nextJitter = final ? zeroJitter : random.NextFloat3(-jitter, jitter);
+            float3 nextMidJitter = final ? zeroMidJitter : random.NextFloat3(-jitter, jitter);
+
             int currentEdge = i;
-            int nextEdge = (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
+            int nextEdge = final ? 0 : i+1;
 
-            float3 current = cellEdgeVertexPositions[currentEdge] - cell.position;
-            float3 next = cellEdgeVertexPositions[nextEdge] - cell.position;
-
-            //current = vectorUtil.MidPoint(center, current, 0.9f);
-            //next = vectorUtil.MidPoint(center, next, 0.9f);
+            float3 current = cellEdgeVertexPositions[currentEdge] - cell.position + currentJitter;
+            float3 next = cellEdgeVertexPositions[nextEdge] - cell.position + nextJitter;
 
             current.y += height;
             next.y += height;
 
-            float3 currentMidPoint = vectorUtil.MidPoint(center, current, 0.6f);
-            float3 nextMidPoint = vectorUtil.MidPoint(center, next, 0.6f);
+            float3 currentMidPoint = vectorUtil.MidPoint(center, current, 0.6f) + currentMidJitter;
+            float3 nextMidPoint = vectorUtil.MidPoint(center, next, 0.6f) + nextMidJitter;
             
             current.y -= drop;
             next.y -= drop;
             
-            float3 edgeMidPoint = vectorUtil.MidPoint(current, next);
+            float3 edgeMidPoint = vectorUtil.MidPoint(current, next) + random.NextFloat3(-jitter, jitter);
 
             VertAndTri(current);
             VertAndTri(edgeMidPoint);
@@ -301,13 +309,20 @@ public struct TreeGenerator
             currentBottom.y -= drop;
             nextBottom.y -= drop;
 
-            VertAndTri(current);
             VertAndTri(currentBottom);
-            VertAndTri(next);
+            VertAndTri(edgeMidPoint);
+            VertAndTri(current);
             
             VertAndTri(currentBottom);
             VertAndTri(nextBottom);
+            VertAndTri(edgeMidPoint);
+
+            VertAndTri(nextBottom);
             VertAndTri(next);
+            VertAndTri(edgeMidPoint);
+
+            currentJitter = nextJitter;
+            currentMidJitter = nextMidJitter;
         }
 
         cellEdgeVertexPositions.Dispose();
