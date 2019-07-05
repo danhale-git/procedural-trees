@@ -34,7 +34,7 @@ public struct TreeGenerator
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
-        NativeArray<int> extruded = TrunkVertices(0.2f, 20);
+        NativeArray<int> extruded = TrunkVertices(0.2f);
         extruded = ExtrudeTrunk(extruded, new float3(0, 1, 0), 0.4f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
@@ -48,22 +48,32 @@ public struct TreeGenerator
         cellVertices.Dispose();
     }
 
-    NativeArray<int> TrunkVertices(float size, int minAngle)
+    NativeList<float3> RemoveThinSegments(NativeArray<float3> originalVertices, int minAngle)
     {
-        NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        for(int i = 0; i < cellVertices.Length; i++)
+        NativeList<float3> result = new NativeList<float3>( Allocator.Temp);
+
+        for(int i = 0; i < originalVertices.Length; i++)
         {
             int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
             
             float3 currentVertex = cellVertices[i] - cell.position;
             float3 nextVertex = cellVertices[nextIndex] - cell.position;
 
-            if(vectorUtil.Angle(currentVertex, nextVertex) < minAngle)
-                continue;
+            if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
+                result.Add(currentVertex);
+        }
 
-            float3 trunkVertex = currentVertex * size;
+        return result;
+    }
 
-            vertices.Add(trunkVertex);
+    NativeArray<int> TrunkVertices(float size)
+    {
+        NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
+        NativeList<float3> verticesTrimmed = RemoveThinSegments(cellVertices, 20);
+
+        for(int i = 0; i < verticesTrimmed.Length; i++)
+        {
+            vertices.Add(verticesTrimmed[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
