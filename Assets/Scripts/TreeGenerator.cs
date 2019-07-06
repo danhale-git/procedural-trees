@@ -26,6 +26,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex, UnityEngine.Color.blue);
+        WorldToLocal(cellVertices);
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
@@ -48,6 +49,12 @@ public struct TreeGenerator
         cellVertices.Dispose();
     }
 
+    void WorldToLocal(NativeArray<float3> worldPositions)
+    {
+        for(int i = 0; i < worldPositions.Length; i++)
+            worldPositions[i] = worldPositions[i] - cell.position;
+    }
+
     NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, int minAngle)
     {
         NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
@@ -56,8 +63,8 @@ public struct TreeGenerator
         {
             int nextIndex = i == originalVertices.Length-1 ? 0 : i+1;
             
-            float3 currentVertex = originalVertices[i] - cell.position;
-            float3 nextVertex = originalVertices[nextIndex] - cell.position;
+            float3 currentVertex = originalVertices[i];
+            float3 nextVertex = originalVertices[nextIndex];
 
             if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
                 trimmed.Add(currentVertex);
