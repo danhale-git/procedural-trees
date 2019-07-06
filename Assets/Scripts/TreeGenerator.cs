@@ -54,10 +54,10 @@ public struct TreeGenerator
 
         for(int i = 0; i < originalVertices.Length; i++)
         {
-            int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
+            int nextIndex = i == originalVertices.Length-1 ? 0 : i+1;
             
-            float3 currentVertex = cellVertices[i] - cell.position;
-            float3 nextVertex = cellVertices[nextIndex] - cell.position;
+            float3 currentVertex = originalVertices[i] - cell.position;
+            float3 nextVertex = originalVertices[nextIndex] - cell.position;
 
             if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
                 trimmed.Add(currentVertex);
