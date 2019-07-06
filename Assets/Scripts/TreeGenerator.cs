@@ -55,7 +55,7 @@ public struct TreeGenerator
             worldPositions[i] = worldPositions[i] - cell.position;
     }
 
-    NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, int minAngle)
+    NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, float3 centre, int minAngle)
     {
         NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
 
@@ -63,15 +63,16 @@ public struct TreeGenerator
         {
             int nextIndex = i == originalVertices.Length-1 ? 0 : i+1;
             
-            float3 currentVertex = originalVertices[i];
-            float3 nextVertex = originalVertices[nextIndex];
+            float3 currentVertex = originalVertices[i] - centre;
+            float3 nextVertex = originalVertices[nextIndex] - centre;
 
             if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
-                trimmed.Add(currentVertex);
+                trimmed.Add(originalVertices[i]);
         }
 
         NativeArray<float3> trimmedArray = new NativeArray<float3>(trimmed.Length, Allocator.Temp);
         trimmedArray.CopyFrom(trimmed);
+        trimmed.Dispose();
 
         return trimmedArray;
     }
@@ -79,7 +80,7 @@ public struct TreeGenerator
     NativeArray<int> TrunkVertices(float size)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, 20);
+        NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, float3.zero, 20);
 
         for(int i = 0; i < verticesTrimmed.Length; i++)
         {
@@ -134,10 +135,17 @@ public struct TreeGenerator
         for(int i = 0; i < children.Length; i++)
         {
             NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index, UnityEngine.Color.green);
-            float3 meanPoint = vectorUtil.MeanPoint(edgeVertices);
+            WorldToLocal(edgeVertices);
+            NativeArray<float3> edgeVerticesTrimmed = RemoveThinSegments(edgeVertices, children[i].position - cell.position, 20);
+
+            float3 meanPoint = vectorUtil.MeanPoint(edgeVerticesTrimmed);
             //TODO process vertices and center y axis point here
-            DrawLeaves(edgeVertices, meanPoint, height);
-        }  
+            DrawLeaves(edgeVerticesTrimmed, meanPoint, height);
+
+            edgeVertices.Dispose();
+            edgeVerticesTrimmed.Dispose();
+        } 
+        children.Dispose();
         /*float3 meanPoint = vectorUtil.MeanPoint(cellVertices);
         NativeArray<float3> verticesCopy = new NativeArray<float3>(cellVertices.Length, Allocator.Temp);
         verticesCopy.CopyFrom(cellVertices);
@@ -272,7 +280,7 @@ public struct TreeGenerator
     {
         float drop = math.length(FarthestEdgeVertex(cellEdgeVertexPositions, centerPosition)) * 0.4f;
 
-        float3 center = centerPosition - cell.position + (drop * 0.5f);
+        float3 center = centerPosition + (drop * 0.5f);
         center.y += height;
 
         int cellCenter = vertices.Length-1;
@@ -294,8 +302,8 @@ public struct TreeGenerator
             int currentEdge = i;
             int nextEdge = final ? 0 : i+1;
 
-            float3 current = cellEdgeVertexPositions[currentEdge] - cell.position + currentJitter;
-            float3 next = cellEdgeVertexPositions[nextEdge] - cell.position + nextJitter;
+            float3 current = cellEdgeVertexPositions[currentEdge] + currentJitter;
+            float3 next = cellEdgeVertexPositions[nextEdge] + nextJitter;
 
             current.y += height;
             next.y += height;
@@ -344,8 +352,6 @@ public struct TreeGenerator
             currentJitter = nextJitter;
             currentMidJitter = nextMidJitter;
         }
-
-        cellEdgeVertexPositions.Dispose();
     }
 
     void VertAndTri(float3 vert)
