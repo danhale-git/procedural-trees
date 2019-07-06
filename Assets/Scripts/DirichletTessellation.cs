@@ -4,22 +4,31 @@ using Unity.Mathematics;
 public struct DirichletTessellation
 {
     NativeList<float2> edgeVertices;
+    NativeList<float2> adjacentCellPositions;
     float2 centerPoint;
     
     VectorUtil vectorUtil;
 
-    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor)
+    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2> adjacentPositions)
     {
-        this.edgeVertices = new NativeList<float2>(Allocator.TempJob);
+        this.edgeVertices = new NativeList<float2>(Allocator.Temp);
+        this.adjacentCellPositions = new NativeList<float2>(Allocator.Temp);
         this.centerPoint = new float2(point.x, (float)point.z);
 
         for(int i = 0; i < triangles.Length; i++)
             GatherCellEdgeVertices(triangles[i], centerPoint);
         
         vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
-        RemoveDuplicateVertices();
+        RemoveDuplicateVertices(edgeVertices);
+
+        vectorUtil.SortVerticesClockwise(adjacentCellPositions, centerPoint);
+        RemoveDuplicateVertices(adjacentCellPositions);
+        
 
         DrawEdges(debugColor);//DEBUG
+        //DrawAdjacent(debugColor);//DEBUG
+
+        adjacentPositions = adjacentCellPositions;
 
         return edgeVertices;
     }
@@ -42,18 +51,21 @@ public struct DirichletTessellation
         float2 circumcenter = triangle[3];
         for(int i = 0; i < 3; i++)
             if(i != notAtEdge)
-                edgeVertices.Add(new float2(circumcenter));
+            {
+                edgeVertices.Add(circumcenter);
+                adjacentCellPositions.Add(triangle[i]);
+            }
     }
 
-    void RemoveDuplicateVertices()
+    void RemoveDuplicateVertices(NativeList<float2> originalVertices)
     {
-        NativeArray<float2> edgeVerticesCopy = new NativeArray<float2>(edgeVertices.Length, Allocator.Temp);
-        edgeVerticesCopy.CopyFrom(edgeVertices);
+        NativeArray<float2> copy = new NativeArray<float2>(originalVertices.Length, Allocator.Temp);
+        copy.CopyFrom(originalVertices);
 
-        edgeVertices.Clear();
+        originalVertices.Clear();
 
-        for(int i = 0; i < edgeVerticesCopy.Length;i += 2)
-            edgeVertices.Add(edgeVerticesCopy[i]);
+        for(int i = 0; i < copy.Length;i += 2)
+            originalVertices.Add(copy[i]);
     }
 
     //DEBUG
@@ -79,6 +91,13 @@ public struct DirichletTessellation
             int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
             DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
         }//DEBUG
+    }
+    void DrawAdjacent(UnityEngine.Color color)
+    {
+        for(int i = 0; i < adjacentCellPositions.Length; i++)
+        {
+            DrawLineFloat2(adjacentCellPositions[i], centerPoint, color);
+        }
     }
     //DEBUG
 }

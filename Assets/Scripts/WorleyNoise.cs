@@ -58,7 +58,7 @@ public struct WorleyNoise
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
-        var points = new NativeList<float2>(Allocator.Persistent);
+        var points = new NativeList<float2>(Allocator.Temp);
 
 		float3 cellPosition = float3.zero;
 
@@ -74,7 +74,10 @@ public struct WorleyNoise
             }
 
         NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
-        NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color);
+
+		//TODO: this isn't used yet, is it needed?
+		NativeArray<float2> adjacentPositions;
+        NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color, out adjacentPositions);
 
 		NativeArray<float3> vertices3D = new NativeArray<float3>(vertices.Length, Allocator.Persistent);
 		for(int i = 0; i < vertices.Length; i++)
