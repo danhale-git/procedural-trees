@@ -48,9 +48,9 @@ public struct TreeGenerator
         cellVertices.Dispose();
     }
 
-    NativeList<float3> RemoveThinSegments(NativeArray<float3> originalVertices, int minAngle)
+    NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, int minAngle)
     {
-        NativeList<float3> result = new NativeList<float3>( Allocator.Temp);
+        NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
 
         for(int i = 0; i < originalVertices.Length; i++)
         {
@@ -60,16 +60,19 @@ public struct TreeGenerator
             float3 nextVertex = cellVertices[nextIndex] - cell.position;
 
             if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
-                result.Add(currentVertex);
+                trimmed.Add(currentVertex);
         }
 
-        return result;
+        NativeArray<float3> trimmedArray = new NativeArray<float3>(trimmed.Length, Allocator.Temp);
+        trimmedArray.CopyFrom(trimmed);
+
+        return trimmedArray;
     }
 
     NativeArray<int> TrunkVertices(float size)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        NativeList<float3> verticesTrimmed = RemoveThinSegments(cellVertices, 20);
+        NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, 20);
 
         for(int i = 0; i < verticesTrimmed.Length; i++)
         {
