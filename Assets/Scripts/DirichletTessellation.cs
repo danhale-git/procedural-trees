@@ -15,8 +15,8 @@ public struct DirichletTessellation
         this.adjacentCellPositions = new NativeList<float2>(Allocator.Temp);
         this.centerPoint = new float2(point.x, (float)point.z);
 
-        for(int i = 0; i < triangles.Length; i++)
-            GatherCellEdgeVertices(triangles[i], centerPoint);
+
+        GatherCellEdgeVertices(triangles, centerPoint);
         
         vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
         RemoveDuplicateVertices(edgeVertices);
@@ -33,28 +33,33 @@ public struct DirichletTessellation
         return edgeVertices;
     }
 
-    void GatherCellEdgeVertices(float2x4 triangle, float2 centerPoint)
+    void GatherCellEdgeVertices(NativeArray<float2x4> triangles, float2 centerPoint)
     {
-        bool triangleInCell = false;
-        int notAtEdge = 0;
+        for(int t = 0; t < triangles.Length; t++)
+        {
+            float2x4 triangle = triangles[t];
 
-        for(int i = 0; i < 3; i++)
-            if(triangle[i].Equals(centerPoint))
-            {
-                triangleInCell = true;
-                notAtEdge = i;
-            }
+            bool triangleInCell = false;
+            int notAtEdge = 0;
 
-        if(!triangleInCell)
-            return;
+            for(int i = 0; i < 3; i++)
+                if(triangle[i].Equals(centerPoint))
+                {
+                    triangleInCell = true;
+                    notAtEdge = i;
+                }
 
-        float2 circumcenter = triangle[3];
-        for(int i = 0; i < 3; i++)
-            if(i != notAtEdge)
-            {
-                edgeVertices.Add(circumcenter);
-                adjacentCellPositions.Add(triangle[i]);
-            }
+            if(!triangleInCell)
+                continue;
+
+            float2 circumcenter = triangle[3];
+            for(int i = 0; i < 3; i++)
+                if(i != notAtEdge)
+                {
+                    edgeVertices.Add(circumcenter);
+                    adjacentCellPositions.Add(triangle[i]);
+                }
+        }
     }
 
     void RemoveDuplicateVertices(NativeList<float2> originalVertices)
