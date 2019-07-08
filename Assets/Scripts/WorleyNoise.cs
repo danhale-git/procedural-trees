@@ -15,7 +15,7 @@ public struct WorleyNoise
 	public DistanceFunction distanceFunction;
 	public CellularReturnType cellularReturnType;
 
-	BowyerWatsonTriangulation triangulation;
+	BowyerWatson triangulation;
     DirichletTessellation tessellation;
 	
     CELL_2D cell_2D;
@@ -73,7 +73,7 @@ public struct WorleyNoise
                     cellPosition = position;
             }
 
-        NativeList<BowyerWatsonTriangulation.Triangle> delaunay = triangulation.Triangulate(points);
+        NativeList<BowyerWatson.Triangle> delaunay = triangulation.Triangulate(points);
 
 		NativeArray<float2x2> adjacentPositions;
         NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color, out adjacentPositions);

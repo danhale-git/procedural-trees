@@ -1,7 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct BowyerWatsonTriangulation
+public struct BowyerWatson
 {
     NativeList<float2> points;
 

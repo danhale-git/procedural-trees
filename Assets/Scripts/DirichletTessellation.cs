@@ -9,7 +9,7 @@ public struct DirichletTessellation
     
     VectorUtil vectorUtil;
 
-    public NativeList<float2> Tessalate(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
+    public NativeList<float2> Tessalate(NativeArray<BowyerWatson.Triangle> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
     {
         this.edgeVertices = new NativeList<float2>(Allocator.Temp);
         this.adjacentCellPositions = new NativeList<float2x2>(Allocator.Temp);
@@ -28,11 +28,11 @@ public struct DirichletTessellation
         return edgeVertices;
     }
 
-    void GatherCellEdgeVertices(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float2 centerPoint)
+    void GatherCellEdgeVertices(NativeArray<BowyerWatson.Triangle> triangles, float2 centerPoint)
     {
         for(int t = 0; t < triangles.Length; t++)
         {
-            BowyerWatsonTriangulation.Triangle triangle = triangles[t];
+            BowyerWatson.Triangle triangle = triangles[t];
 
             bool triangleInCell = false;
             int floatIndex = 0;
@@ -73,10 +73,10 @@ public struct DirichletTessellation
 
     struct VertexRotation : System.IComparable<VertexRotation>
     {
-        public readonly BowyerWatsonTriangulation.Triangle triangle;
+        public readonly BowyerWatson.Triangle triangle;
         public readonly float degrees;
 
-        public VertexRotation(BowyerWatsonTriangulation.Triangle triangle, float angle)
+        public VertexRotation(BowyerWatson.Triangle triangle, float angle)
         {
             this.triangle = triangle;
             this.degrees = angle;
@@ -88,7 +88,7 @@ public struct DirichletTessellation
         }
     }
 
-    public NativeArray<BowyerWatsonTriangulation.Triangle> SortTrianglesClockwise(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float2 center)
+    public NativeArray<BowyerWatson.Triangle> SortTrianglesClockwise(NativeArray<BowyerWatson.Triangle> triangles, float2 center)
     {
         NativeArray<VertexRotation> sorter = new NativeArray<VertexRotation>(triangles.Length, Allocator.Temp);
         for(int i = 0; i < triangles.Length; i++)

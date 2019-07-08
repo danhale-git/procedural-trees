@@ -9,7 +9,7 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     WorleyNoise worley;
 
-    BowyerWatsonTriangulation bowyerWatson;
+    BowyerWatson bowyerWatson;
     DirichletTessellation dirichlet;
 
     static GameObject textPrefab;
