@@ -76,7 +76,7 @@ public struct WorleyNoise
         NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
 
 		//TODO: this isn't used yet, is it needed?
-		NativeArray<float2> adjacentPositions;
+		NativeArray<float2x2> adjacentPositions;
         NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color, out adjacentPositions);
 
 		NativeArray<float3> vertices3D = new NativeArray<float3>(vertices.Length, Allocator.Persistent);

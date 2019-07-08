@@ -4,29 +4,24 @@ using Unity.Mathematics;
 public struct DirichletTessellation
 {
     NativeList<float2> edgeVertices;
-    NativeList<float2> adjacentCellPositions;
+    NativeList<float2x2> adjacentCellPositions;
     float2 centerPoint;
     
     VectorUtil vectorUtil;
 
-    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2> adjacentPositions)
+    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
     {
         this.edgeVertices = new NativeList<float2>(Allocator.Temp);
-        this.adjacentCellPositions = new NativeList<float2>(Allocator.Temp);
+        this.adjacentCellPositions = new NativeList<float2x2>(Allocator.Temp);
         this.centerPoint = new float2(point.x, (float)point.z);
 
 
         GatherCellEdgeVertices(triangles, centerPoint);
         
         vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
-        RemoveDuplicateVertices(edgeVertices);
-
-        vectorUtil.SortVerticesClockwise(adjacentCellPositions, centerPoint);
-        RemoveDuplicateVertices(adjacentCellPositions);
-        
 
         DrawEdges(debugColor);//DEBUG
-        //DrawAdjacent(debugColor);//DEBUG
+        DrawAdjacent(debugColor);//DEBUG
 
         adjacentPositions = adjacentCellPositions;
 
@@ -40,25 +35,30 @@ public struct DirichletTessellation
             float2x4 triangle = triangles[t];
 
             bool triangleInCell = false;
-            int notAtEdge = 0;
+
+            int floatIndex = 0;
+            float2x2 adjacentCellPair = float2x2.zero;
 
             for(int i = 0; i < 3; i++)
                 if(triangle[i].Equals(centerPoint))
                 {
                     triangleInCell = true;
-                    notAtEdge = i;
                 }
-
-            if(!triangleInCell)
-                continue;
-
-            float2 circumcenter = triangle[3];
-            for(int i = 0; i < 3; i++)
-                if(i != notAtEdge)
+                else
                 {
-                    edgeVertices.Add(circumcenter);
-                    adjacentCellPositions.Add(triangle[i]);
+                    if(floatIndex > 1)
+                        continue;
+
+                    adjacentCellPair[floatIndex] = triangle[i];
+                    floatIndex++;
                 }
+
+            if(triangleInCell)
+            {
+                float2 circumcenter = triangle[3];
+                edgeVertices.Add(circumcenter);
+                adjacentCellPositions.Add(adjacentCellPair);
+            }
         }
     }
 
@@ -101,7 +101,8 @@ public struct DirichletTessellation
     {
         for(int i = 0; i < adjacentCellPositions.Length; i++)
         {
-            DrawLineFloat2(adjacentCellPositions[i], centerPoint, color);
+            DrawLineFloat2(adjacentCellPositions[i].c0, centerPoint, color);
+            DrawLineFloat2(adjacentCellPositions[i].c1, centerPoint, color);
         }
     }
     //DEBUG
