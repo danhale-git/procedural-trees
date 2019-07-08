@@ -15,11 +15,10 @@ public struct DirichletTessellation
         this.adjacentCellPositions = new NativeList<float2x2>(Allocator.Temp);
         this.centerPoint = new float2(point.x, (float)point.z);
 
+        SortTrianglesClockwise(triangles, centerPoint);
 
         GatherCellEdgeVertices(triangles, centerPoint);
         
-        vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
-
         DrawEdges(debugColor);//DEBUG
         //DrawAdjacent(debugColor);//DEBUG
 
@@ -58,17 +57,6 @@ public struct DirichletTessellation
                 adjacentCellPositions.Add(adjacentCellPair);
             }
         }
-    }
-
-    void RemoveDuplicateVertices(NativeList<float2> originalVertices)
-    {
-        NativeArray<float2> copy = new NativeArray<float2>(originalVertices.Length, Allocator.Temp);
-        copy.CopyFrom(originalVertices);
-
-        originalVertices.Clear();
-
-        for(int i = 0; i < copy.Length;i += 2)
-            originalVertices.Add(copy[i]);
     }
 
     struct VertexRotation : System.IComparable<VertexRotation>
