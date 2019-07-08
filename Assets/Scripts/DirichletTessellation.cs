@@ -9,7 +9,7 @@ public struct DirichletTessellation
     
     VectorUtil vectorUtil;
 
-    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
+    public NativeList<float2> Tessalate(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
     {
         this.edgeVertices = new NativeList<float2>(Allocator.Temp);
         this.adjacentCellPositions = new NativeList<float2x2>(Allocator.Temp);
@@ -28,12 +28,11 @@ public struct DirichletTessellation
         return edgeVertices;
     }
 
-    void GatherCellEdgeVertices(NativeArray<float2x4> triangles, float2 centerPoint)
+    void GatherCellEdgeVertices(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float2 centerPoint)
     {
         for(int t = 0; t < triangles.Length; t++)
         {
-            float2x4 triangle = triangles[t];
-            float2 circumcenter = triangle[3];
+            BowyerWatsonTriangulation.Triangle triangle = triangles[t];
 
             bool triangleInCell = false;
             int floatIndex = 0;
@@ -55,7 +54,7 @@ public struct DirichletTessellation
 
             if(triangleInCell)
             {
-                edgeVertices.Add(circumcenter);
+                edgeVertices.Add(triangle.circumcircle.center);
                 adjacentCellPositions.Add(adjacentCellPair);
             }
         }
@@ -70,6 +69,40 @@ public struct DirichletTessellation
 
         for(int i = 0; i < copy.Length;i += 2)
             originalVertices.Add(copy[i]);
+    }
+
+    struct VertexRotation : System.IComparable<VertexRotation>
+    {
+        public readonly BowyerWatsonTriangulation.Triangle triangle;
+        public readonly float degrees;
+
+        public VertexRotation(BowyerWatsonTriangulation.Triangle triangle, float angle)
+        {
+            this.triangle = triangle;
+            this.degrees = angle;
+        }
+
+        public int CompareTo(VertexRotation otherVertAngle)
+        {
+            return degrees.CompareTo(otherVertAngle.degrees);
+        }
+    }
+
+    public NativeArray<BowyerWatsonTriangulation.Triangle> SortTrianglesClockwise(NativeArray<BowyerWatsonTriangulation.Triangle> triangles, float2 center)
+    {
+        NativeArray<VertexRotation> sorter = new NativeArray<VertexRotation>(triangles.Length, Allocator.Temp);
+        for(int i = 0; i < triangles.Length; i++)
+        {
+            float rotationInDegrees = vectorUtil.RotationFromUp(triangles[i].circumcircle.center, center);
+            sorter[i] = new VertexRotation(triangles[i], rotationInDegrees);
+        }
+
+        sorter.Sort();
+
+        for(int i = 0; i < triangles.Length; i++)
+            triangles[i] = sorter[i].triangle;
+
+        return triangles;                
     }
 
     //DEBUG

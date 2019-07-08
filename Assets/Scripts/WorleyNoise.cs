@@ -73,7 +73,7 @@ public struct WorleyNoise
                     cellPosition = position;
             }
 
-        NativeArray<float2x4> delaunay = triangulation.Triangulate(points);
+        NativeList<BowyerWatsonTriangulation.Triangle> delaunay = triangulation.Triangulate(points);
 
 		NativeArray<float2x2> adjacentPositions;
         NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color, out adjacentPositions);

@@ -31,7 +31,7 @@ public struct BowyerWatsonTriangulation
         }
     }
 
-    struct Triangle
+    public struct Triangle
     {
         public Triangle(float2 a, float2 b, float2 c)
         {
@@ -56,21 +56,9 @@ public struct BowyerWatsonTriangulation
                 }
             }
         }
-
-        public static implicit operator float2x4(Triangle t)
-        {
-            float2x4 converted = new float2x4{
-                c0 = t.a,
-                c1 = t.b,
-                c2 = t.c,
-                c3 = t.circumcircle.center
-            };
-
-            return converted;
-        }
     }
 
-    struct Circumcircle
+    public struct Circumcircle
 	{
         public Circumcircle(float2 a, float2 b, float2 c)
         {
@@ -91,7 +79,7 @@ public struct BowyerWatsonTriangulation
 		public float radius;
 	}
 
-    public NativeArray<float2x4> Triangulate(NativeList<float2> points)
+    public NativeList<Triangle> Triangulate(NativeList<float2> points)
     {
         this.points = points;
         triangles = new NativeList<Triangle>(Allocator.Persistent);
@@ -112,14 +100,9 @@ public struct BowyerWatsonTriangulation
 
         RemoveExternalTriangles();
         
-        NativeArray<float2x4> delaunayTriangles = new NativeArray<float2x4>(triangles.Length, Allocator.Persistent);
-        for(int i = 0; i < triangles.Length; i++)
-            delaunayTriangles[i] = triangles[i];
-        
         points.Dispose();
-        triangles.Dispose();
 
-        return delaunayTriangles;
+        return triangles;
     }
 
     void RemoveIntersectingTriangles(float2 point)
