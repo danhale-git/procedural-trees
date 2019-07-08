@@ -21,7 +21,7 @@ public struct DirichletTessellation
         vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
 
         DrawEdges(debugColor);//DEBUG
-        DrawAdjacent(debugColor);//DEBUG
+        //DrawAdjacent(debugColor);//DEBUG
 
         adjacentPositions = adjacentCellPositions;
 
@@ -33,9 +33,9 @@ public struct DirichletTessellation
         for(int t = 0; t < triangles.Length; t++)
         {
             float2x4 triangle = triangles[t];
+            float2 circumcenter = triangle[3];
 
             bool triangleInCell = false;
-
             int floatIndex = 0;
             float2x2 adjacentCellPair = float2x2.zero;
 
@@ -55,7 +55,6 @@ public struct DirichletTessellation
 
             if(triangleInCell)
             {
-                float2 circumcenter = triangle[3];
                 edgeVertices.Add(circumcenter);
                 adjacentCellPositions.Add(adjacentCellPair);
             }
