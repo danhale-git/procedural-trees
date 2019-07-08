@@ -40,6 +40,18 @@ public struct VectorUtil
         return vertices;                
     }
 
+    public float FarthestDistance(NativeArray<float3> checkFarthest, float3 fromPosition)
+    {
+        float farthestDistance = 0;
+        for(int i = 0; i < checkFarthest.Length; i++)
+        {
+            float distance = math.length(checkFarthest[i] - fromPosition);
+            if(distance > farthestDistance)
+                farthestDistance = distance;
+        }
+        return farthestDistance;
+    }
+
     public float2 MeanPoint(NativeArray<float2> points)
     {
         float2 sum = float2.zero;
