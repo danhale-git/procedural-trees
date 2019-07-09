@@ -85,21 +85,23 @@ public struct BowyerWatson
 
     public WorleyNoise.CellProfile GetCellProfile(NativeList<float2> points, WorleyNoise.CellData cell)
     {
-        cellProfile = new WorleyNoise.CellProfile();
-        cellProfile.cell = cell;
+        this.cellProfile = new WorleyNoise.CellProfile();
+        this.cellProfile.cell = cell;
 
-        Triangulate(points, cell);
-
-        return cellProfile;
-    }
-
-    public NativeList<float3> Triangulate(NativeList<float2> points, WorleyNoise.CellData cell)
-    {
         this.points = points;
         this.cell = cell;
         this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         this.edgeVertices = new NativeList<float3>(Allocator.Temp);
+        
+        BowyerWatsonTriangulation();
+        
+        GetWorleyCellVertices();
 
+        return cellProfile;
+    }
+
+    void BowyerWatsonTriangulation()
+    {
         triangles.Add(SuperTriangle());
 
         for(int i = 0; i < points.Length; i++)
@@ -113,7 +115,10 @@ public struct BowyerWatson
 
             edges.Dispose();
         }
+    }
 
+    void GetWorleyCellVertices()
+    {
         RemoveExternalTriangles();
         
         points.Dispose();
@@ -129,8 +134,6 @@ public struct BowyerWatson
         var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
         vertexArray.CopyFrom(edgeVertices);
         cellProfile.vertices = vertexArray;
-
-        return edgeVertices;
     }
 
     void RemoveIntersectingTriangles(float2 point)
