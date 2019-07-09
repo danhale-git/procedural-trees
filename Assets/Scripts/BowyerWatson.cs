@@ -82,59 +82,6 @@ public struct BowyerWatson
 		public float radius;
 	}
 
-    public NativeList<float2> Tessalate()
-    {
-        float2 centerPoint = new float2(cell.position.x, (float)cell.position.z);
-
-        var sortedTriangles = new NativeArray<Triangle>(triangles.Length, Allocator.Temp);
-        sortedTriangles.CopyFrom(triangles);
-        sortedTriangles.Sort();
-        sortedTriangles.CopyTo(triangles);
-        sortedTriangles.Dispose();
-
-        GatherCellEdgeVertices(triangles, centerPoint);
-        
-        //DrawEdges(UnityEngine.Color.green);//DEBUG
-        //DrawAdjacent(debugColor);//DEBUG
-
-        //this.adjacentPositions = adjacentCellPositions;
-
-        triangles.Dispose();
-
-        return edgeVertices;
-    }
-
-    void GatherCellEdgeVertices(NativeArray<BowyerWatson.Triangle> triangles, float2 centerPoint)
-    {
-        for(int t = 0; t < triangles.Length; t++)
-        {
-            BowyerWatson.Triangle triangle = triangles[t];
-
-            bool triangleInCell = false;
-            int floatIndex = 0;
-            float2x2 adjacentCellPair = float2x2.zero;
-
-            for(int i = 0; i < 3; i++)
-                if(triangle[i].Equals(centerPoint))
-                {
-                    triangleInCell = true;
-                }
-                else
-                {
-                    if(floatIndex > 1)
-                        continue;
-
-                    adjacentCellPair[floatIndex] = triangle[i];
-                    floatIndex++;
-                }
-
-            if(triangleInCell)
-            {
-                edgeVertices.Add(triangle.circumcircle.center);
-            }
-        }
-    }
-
     public NativeList<float2> Triangulate(NativeList<float2> points, WorleyNoise.CellData cell)
     {
         this.points = points;
@@ -143,7 +90,6 @@ public struct BowyerWatson
         this.edgeVertices = new NativeList<float2>(Allocator.Temp);
 
         triangles.Add(SuperTriangle());
-
 
         for(int i = 0; i < points.Length; i++)
         {
@@ -161,7 +107,15 @@ public struct BowyerWatson
         
         points.Dispose();
 
-        return Tessalate();
+        SortTrianglesClockwise();
+
+        float2 centerPoint = new float2(cell.position.x, (float)cell.position.z);
+
+        GatherCellEdgeVertices(triangles, centerPoint);
+
+        triangles.Dispose();
+
+        return edgeVertices;
     }
 
     void RemoveIntersectingTriangles(float2 point)
@@ -269,6 +223,46 @@ public struct BowyerWatson
                     return true;
 
         return false;
+    }
+
+    void SortTrianglesClockwise()
+    {
+        var sortedTriangles = new NativeArray<Triangle>(triangles.Length, Allocator.Temp);
+        sortedTriangles.CopyFrom(triangles);
+        sortedTriangles.Sort();
+        sortedTriangles.CopyTo(triangles);
+        sortedTriangles.Dispose();
+    }
+
+    void GatherCellEdgeVertices(NativeArray<BowyerWatson.Triangle> triangles, float2 centerPoint)
+    {
+        for(int t = 0; t < triangles.Length; t++)
+        {
+            BowyerWatson.Triangle triangle = triangles[t];
+
+            bool triangleInCell = false;
+            int floatIndex = 0;
+            float2x2 adjacentCellPair = float2x2.zero;
+
+            for(int i = 0; i < 3; i++)
+                if(triangle[i].Equals(centerPoint))
+                {
+                    triangleInCell = true;
+                }
+                else
+                {
+                    if(floatIndex > 1)
+                        continue;
+
+                    adjacentCellPair[floatIndex] = triangle[i];
+                    floatIndex++;
+                }
+
+            if(triangleInCell)
+            {
+                edgeVertices.Add(triangle.circumcircle.center);
+            }
+        }
     }
 
     Triangle SuperTriangle()
