@@ -57,12 +57,16 @@ public struct WorleyNoise
 		return cell;
     }
 	
-	//public struct CellProfile { }
-	//	CellData
-	//	Vertices
-	//	^Parallel adjacent indices
-	//	MeanPoint
-	//	Adjacent CellData set
+	public struct CellProfile
+	{
+		public CellData cell;
+		public float3 meanPoint;
+		public NativeArray<float3> vertices;
+		//	^Parallel adjacent indices
+
+		//	MeanPoint
+		//	Adjacent CellData set
+	}
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
@@ -82,19 +86,9 @@ public struct WorleyNoise
                     cell = newCell;
             }
 
-        NativeList<float2> vertices = bowyerWatson.Triangulate(points, cell);
+        CellProfile cellProfile = bowyerWatson.GetCellProfile(points, cell);
 
-		NativeArray<float3> vertices3D = new NativeArray<float3>(vertices.Length, Allocator.Persistent);
-		for(int i = 0; i < vertices.Length; i++)
-		{
-			float2 v = vertices[i];
-			vertices3D[i] = new float3(v.x, 0, v.y);
-
-			//	Fill adjacent cell arrays here
-		}
-		vertices.Dispose();
-
-        return vertices3D;
+        return cellProfile.vertices;
     }
 
 	public CellData GetCellData(float x, float y)

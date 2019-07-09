@@ -4,13 +4,14 @@ using Unity.Collections;
 public struct BowyerWatson
 {
     WorleyNoise.CellData cell;
+    WorleyNoise.CellProfile cellProfile;
 
     NativeList<float2> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
 
-    NativeList<float2> edgeVertices;
+    NativeList<float3> edgeVertices;
 
     Triangle superTriangle;
 
@@ -82,12 +83,22 @@ public struct BowyerWatson
 		public float radius;
 	}
 
-    public NativeList<float2> Triangulate(NativeList<float2> points, WorleyNoise.CellData cell)
+    public WorleyNoise.CellProfile GetCellProfile(NativeList<float2> points, WorleyNoise.CellData cell)
+    {
+        cellProfile = new WorleyNoise.CellProfile();
+        cellProfile.cell = cell;
+
+        Triangulate(points, cell);
+
+        return cellProfile;
+    }
+
+    public NativeList<float3> Triangulate(NativeList<float2> points, WorleyNoise.CellData cell)
     {
         this.points = points;
         this.cell = cell;
         this.triangles = new NativeList<Triangle>(Allocator.TempJob);
-        this.edgeVertices = new NativeList<float2>(Allocator.Temp);
+        this.edgeVertices = new NativeList<float3>(Allocator.Temp);
 
         triangles.Add(SuperTriangle());
 
@@ -114,6 +125,10 @@ public struct BowyerWatson
         GatherCellEdgeVertices(triangles, centerPoint);
 
         triangles.Dispose();
+
+        var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
+        vertexArray.CopyFrom(edgeVertices);
+        cellProfile.vertices = vertexArray;
 
         return edgeVertices;
     }
@@ -260,7 +275,8 @@ public struct BowyerWatson
 
             if(triangleInCell)
             {
-                edgeVertices.Add(triangle.circumcircle.center);
+                float2 c = triangle.circumcircle.center;
+                edgeVertices.Add(new float3(c.x, 0, c.y));
             }
         }
     }
