@@ -3,10 +3,14 @@ using Unity.Collections;
 
 public struct BowyerWatson
 {
+    WorleyNoise.CellData cell;
+
     NativeList<float2> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
+
+    NativeList<float2> edgeVertices;
 
     Triangle superTriangle;
 
@@ -31,17 +35,16 @@ public struct BowyerWatson
         }
     }
 
-    public struct Triangle
+    public struct Triangle : System.IComparable<Triangle>
     {
-        public Triangle(float2 a, float2 b, float2 c)
-        {
-            this.a = a;
-            this.b = b;
-            this.c = c;
-            this.circumcircle = new Circumcircle(a, b, c);
-        }
-        public readonly float2 a, b, c;
+        public float2 a, b, c;
         public Circumcircle circumcircle;
+        public float degreesFromUp;
+
+        public int CompareTo(Triangle other)
+        {
+            return degreesFromUp.CompareTo(other.degreesFromUp);
+        }
 
         public float2 this[int i]
         {
@@ -79,12 +82,68 @@ public struct BowyerWatson
 		public float radius;
 	}
 
-    public NativeList<Triangle> Triangulate(NativeList<float2> points)
+    public NativeList<float2> Tessalate()
+    {
+        float2 centerPoint = new float2(cell.position.x, (float)cell.position.z);
+
+        var sortedTriangles = new NativeArray<Triangle>(triangles.Length, Allocator.Temp);
+        sortedTriangles.CopyFrom(triangles);
+        sortedTriangles.Sort();
+        sortedTriangles.CopyTo(triangles);
+        sortedTriangles.Dispose();
+
+        GatherCellEdgeVertices(triangles, centerPoint);
+        
+        //DrawEdges(UnityEngine.Color.green);//DEBUG
+        //DrawAdjacent(debugColor);//DEBUG
+
+        //this.adjacentPositions = adjacentCellPositions;
+
+        triangles.Dispose();
+
+        return edgeVertices;
+    }
+
+    void GatherCellEdgeVertices(NativeArray<BowyerWatson.Triangle> triangles, float2 centerPoint)
+    {
+        for(int t = 0; t < triangles.Length; t++)
+        {
+            BowyerWatson.Triangle triangle = triangles[t];
+
+            bool triangleInCell = false;
+            int floatIndex = 0;
+            float2x2 adjacentCellPair = float2x2.zero;
+
+            for(int i = 0; i < 3; i++)
+                if(triangle[i].Equals(centerPoint))
+                {
+                    triangleInCell = true;
+                }
+                else
+                {
+                    if(floatIndex > 1)
+                        continue;
+
+                    adjacentCellPair[floatIndex] = triangle[i];
+                    floatIndex++;
+                }
+
+            if(triangleInCell)
+            {
+                edgeVertices.Add(triangle.circumcircle.center);
+            }
+        }
+    }
+
+    public NativeList<float2> Triangulate(NativeList<float2> points, WorleyNoise.CellData cell)
     {
         this.points = points;
-        triangles = new NativeList<Triangle>(Allocator.Persistent);
-        superTriangle = SuperTriangle();
-        triangles.Add(superTriangle);
+        this.cell = cell;
+        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
+        this.edgeVertices = new NativeList<float2>(Allocator.Temp);
+
+        triangles.Add(SuperTriangle());
+
 
         for(int i = 0; i < points.Length; i++)
         {
@@ -102,7 +161,7 @@ public struct BowyerWatson
         
         points.Dispose();
 
-        return triangles;
+        return Tessalate();
     }
 
     void RemoveIntersectingTriangles(float2 point)
@@ -166,6 +225,8 @@ public struct BowyerWatson
     {
         NativeArray<float2> vertices = new NativeArray<float2>(3, Allocator.Temp);
 
+        float2 cellPosition2D = new float2(cell.position.x, cell.position.z);
+
         for(int i = 0; i < edges.Length; i++)
         {
             vertices[0] = edges[i].a;
@@ -175,11 +236,12 @@ public struct BowyerWatson
             float2 triangleCenter = vectorUtil.MeanPoint(vertices);
             vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
 
-            Triangle triangle = new Triangle(
-                vertices[0],
-                vertices[1],
-                vertices[2]
-            );
+            Triangle triangle = new Triangle();
+            triangle.a = vertices[0];
+            triangle.b = vertices[1];
+            triangle.c = vertices[2];
+            triangle.circumcircle = new Circumcircle(vertices[0], vertices[1], vertices[2]);
+            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition2D);
 
             triangles.Add(triangle);
         }
@@ -239,7 +301,11 @@ public struct BowyerWatson
             bottom + new float2(1, 0)
         );
 
-        Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
+        Triangle triangle = new Triangle();
+        triangle.a = topIntersect;
+        triangle.b = rightIntersect;
+        triangle.c = leftIntersect;
+        triangle.circumcircle = new Circumcircle(triangle.a, triangle.b, triangle.c);
 
         return triangle;
     }
@@ -269,4 +335,38 @@ public struct BowyerWatson
 
 		return point;
 	}
+
+    //DEBUG
+    void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
+    {
+        float3 a3 = new float3(a.x, 0, a.y);
+        float3 b3 = new float3(b.x, 0, b.y);
+        UnityEngine.Debug.DrawLine(a3, b3, color, 100);
+    }
+    void DrawPoint(float2 point, UnityEngine.Color color)
+    {
+        var offsets = new AdjacentIntOffsetsClockwise();
+        for(int i = 0; i < 4; i++)
+        {
+            DrawLineFloat2(point + offsets[i], point-offsets[i], color);
+        }
+    }
+
+    /*void DrawEdges(UnityEngine.Color color)
+    {
+        for(int i = 0; i < edgeVertices.Length; i++)//DEBUG
+        {
+            int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
+            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
+        }//DEBUG
+    }
+    void DrawAdjacent(UnityEngine.Color color)
+    {
+        for(int i = 0; i < adjacentCellPositions.Length; i++)
+        {
+            DrawLineFloat2(adjacentCellPositions[i].c0, centerPoint, color);
+            DrawLineFloat2(adjacentCellPositions[i].c1, centerPoint, color);
+        }
+    } */
+    //DEBUG
 }

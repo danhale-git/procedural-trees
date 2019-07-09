@@ -15,7 +15,7 @@ public struct WorleyNoise
 	public DistanceFunction distanceFunction;
 	public CellularReturnType cellularReturnType;
 
-	BowyerWatson triangulation;
+	BowyerWatson bowyerWatson;
     DirichletTessellation tessellation;
 	
     CELL_2D cell_2D;
@@ -27,6 +27,7 @@ public struct WorleyNoise
 		seed = math.abs(newSeed);
 	}
 
+	//TODO get cell position as 2d or 3d
 	public struct CellData : IComparable<CellData>, IEquatable<CellData>
 	{
 		public int CompareTo(CellData other)
@@ -55,37 +56,42 @@ public struct WorleyNoise
 		
 		return cell;
     }
+	
+	//public struct CellProfile { }
+	//	CellData
+	//	Vertices
+	//	^Parallel adjacent indices
+	//	MeanPoint
+	//	Adjacent CellData set
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
         var points = new NativeList<float2>(Allocator.Temp);
+		//List of adjacent CellData
 
-		float3 cellPosition = float3.zero;
+		WorleyNoise.CellData cell = new WorleyNoise.CellData();
 
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
                 int2 index = new int2(x, z) + cellIndex;
-                float3 position = GetCellData(index).position;
-                points.Add(new float2(position.x, position.z));
+                WorleyNoise.CellData newCell = GetCellData(index);
+                points.Add(new float2(newCell.position.x, newCell.position.z));
 
 				if(index.Equals(cellIndex))
-                    cellPosition = position;
+                    cell = newCell;
             }
 
-        NativeList<BowyerWatson.Triangle> delaunay = triangulation.Triangulate(points);
-
-		NativeArray<float2x2> adjacentPositions;
-        NativeList<float2> vertices = tessellation.Tessalate(delaunay, cellPosition, color, out adjacentPositions);
+        NativeList<float2> vertices = bowyerWatson.Triangulate(points, cell);
 
 		NativeArray<float3> vertices3D = new NativeArray<float3>(vertices.Length, Allocator.Persistent);
 		for(int i = 0; i < vertices.Length; i++)
 		{
 			float2 v = vertices[i];
 			vertices3D[i] = new float3(v.x, 0, v.y);
-		}
 
-        delaunay.Dispose();
+			//	Fill adjacent cell arrays here
+		}
 		vertices.Dispose();
 
         return vertices3D;
