@@ -10,8 +10,6 @@ public struct BowyerWatson
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
 
-    NativeList<float3> edgeVertices;
-
     Triangle superTriangle;
 
     VectorUtil vectorUtil;
@@ -98,16 +96,19 @@ public struct BowyerWatson
 
         this.points = new NativeList<Vertex>(Allocator.Temp);
         for(int i = 0; i < nineCells.Length; i++)
-        {
             points.Add(new Vertex(nineCells[i]));
-        }
 
         this.triangles = new NativeList<Triangle>(Allocator.TempJob);
-        this.edgeVertices = new NativeList<float3>(Allocator.Temp);
         
         BowyerWatsonTriangulation();
 
-        GetWorleyCellVertices();
+        RemoveExternalTriangles();
+        
+        SortTrianglesClockwise();
+
+        cellProfile.vertices = GatherCellEdgeVertices(out cellProfile.adjacentCells);
+
+        cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
 
         points.Dispose();
         triangles.Dispose();
@@ -201,7 +202,7 @@ public struct BowyerWatson
             vertices[1] = edges[i].b;
             vertices[2] = point;
 
-            float3 triangleCenter = MeanPoint(vertices);
+            //float3 triangleCenter = MeanPoint(vertices);
             //vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
 
             Triangle triangle = new Triangle();
@@ -245,18 +246,6 @@ public struct BowyerWatson
         return new Circumcircle(center, radius);
     }
 
-    void GetWorleyCellVertices()
-    {
-        RemoveExternalTriangles();
-        
-        SortTrianglesClockwise();
-
-        GatherCellEdgeVertices();
-
-        var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
-        vertexArray.CopyFrom(edgeVertices);
-        cellProfile.vertices = vertexArray;
-    }
 
     void RemoveExternalTriangles()
     {
@@ -291,9 +280,12 @@ public struct BowyerWatson
         sortedTriangles.Dispose();
     }
 
-    void GatherCellEdgeVertices()
+    NativeArray<float3> GatherCellEdgeVertices(out NativeArray<WorleyNoise.CellDataX2> adjacentCellsArray)
     {
         float3 centerPoint = cellProfile.cell.position;
+
+        var edgeVertices = new NativeList<float3>(Allocator.Temp);
+        var adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
 
         for(int t = 0; t < triangles.Length; t++)
         {
@@ -301,7 +293,7 @@ public struct BowyerWatson
 
             bool triangleInCell = false;
             int floatIndex = 0;
-            float3x2 adjacentCellPair = float3x2.zero;
+            WorleyNoise.CellDataX2 adjacentCellPair = new WorleyNoise.CellDataX2();
 
             for(int i = 0; i < 3; i++)
                 if(triangle[i].pos.Equals(centerPoint))
@@ -313,7 +305,7 @@ public struct BowyerWatson
                     if(floatIndex > 1)
                         continue;
 
-                    adjacentCellPair[floatIndex] = triangle[i].pos;
+                    adjacentCellPair[floatIndex] = triangle[i].cell;
                     floatIndex++;
                 }
 
@@ -321,9 +313,17 @@ public struct BowyerWatson
             {
                 float3 c = triangle.circumcircle.center;
                 edgeVertices.Add(c);
-                UnityEngine.Debug.Log(triangle.a.cell.index+" "+triangle.b.cell.index+" "+triangle.c.cell.index);
+                adjacentCells.Add(adjacentCellPair);
             }
         }
+
+        var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
+        vertexArray.CopyFrom(edgeVertices);
+        
+        adjacentCellsArray = new NativeArray<WorleyNoise.CellDataX2>(edgeVertices.Length, Allocator.Temp);
+        adjacentCellsArray.CopyFrom(adjacentCells);
+
+        return vertexArray;
     }
 
     Triangle SuperTriangle()

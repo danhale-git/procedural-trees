@@ -40,6 +40,43 @@ public struct WorleyNoise
 		public float3 position;
 	}
 
+	public struct CellDataX2
+	{
+		public CellData c0;
+		public CellData c1;
+
+		public CellData this[int i]
+		{
+			get
+            {
+                switch(i)
+                {
+                    case 0: return c0;
+                    case 1: return c1;
+                    default: throw new System.IndexOutOfRangeException("Index "+i+" out of range 2");
+                }
+            }
+
+			set
+            {
+                switch(i)
+                {
+                    case 0: c0 = value; break;
+                    case 1: c1 = value; break;
+                    default: throw new System.IndexOutOfRangeException("Index "+i+" out of range 2");
+                }
+            }
+		}
+	}
+
+	public struct CellProfile
+	{
+		public CellData cell;
+		public float3 meanPoint;
+		public NativeArray<float3> vertices;
+		public NativeArray<CellDataX2> adjacentCells;
+	}
+
 	public CellData GetCellData(int2 cellIndex)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
@@ -55,17 +92,6 @@ public struct WorleyNoise
 		
 		return cell;
     }
-	
-	public struct CellProfile
-	{
-		public CellData cell;
-		public float3 meanPoint;
-		public NativeArray<float3> vertices;
-		//	^Parallel adjacent indices
-
-		//	MeanPoint
-		//	Adjacent CellData set
-	}
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
