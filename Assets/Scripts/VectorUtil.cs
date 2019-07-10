@@ -23,6 +23,20 @@ public struct VectorUtil
         }
     }
 
+    public NativeArray<float3> SortVerticesClockwise(NativeArray<float3> vertices, float3 center)
+    {
+        var vertices2D = new NativeArray<float2>(vertices.Length, Allocator.Temp);
+        for(int i = 0; i < vertices.Length; i++)
+            vertices2D[i] = new float2(vertices[i].x, vertices[i].z);
+
+        SortVerticesClockwise(vertices2D, new float2(center.x, center.z));
+
+        for(int i = 0; i < vertices.Length; i++)
+            vertices[i] = new float3(vertices2D[i].x, 0, vertices2D[i].y);
+
+        return vertices;
+    }
+
     public NativeArray<float2> SortVerticesClockwise(NativeArray<float2> vertices, float2 center)
     {
         NativeArray<VertexRotation> sorter = new NativeArray<VertexRotation>(vertices.Length, Allocator.Temp);
@@ -78,6 +92,11 @@ public struct VectorUtil
     public float3 MidPoint(float3 a, float3 b, float offset = 0.5f)
     {
         return a + ((b-a) * offset);
+    }
+
+    public float RotationFromUp(float3 position, float3 center)
+    {
+        return RotationFromUp(new float2(position.x, position.z), new float2(center.x, center.z));
     }
 
     public float RotationFromUp(float2 position, float2 center)
