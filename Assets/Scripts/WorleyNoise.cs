@@ -16,7 +16,6 @@ public struct WorleyNoise
 	public CellularReturnType cellularReturnType;
 
 	BowyerWatson bowyerWatson;
-    DirichletTessellation tessellation;
 	
     CELL_2D cell_2D;
     const int X_PRIME = 1619;
@@ -70,7 +69,7 @@ public struct WorleyNoise
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
-        var points = new NativeList<float2>(Allocator.Temp);
+        var points = new NativeList<float3>(Allocator.Temp);
 		//List of adjacent CellData
 
 		WorleyNoise.CellData cell = new WorleyNoise.CellData();
@@ -80,7 +79,7 @@ public struct WorleyNoise
             {
                 int2 index = new int2(x, z) + cellIndex;
                 WorleyNoise.CellData newCell = GetCellData(index);
-                points.Add(new float2(newCell.position.x, newCell.position.z));
+                points.Add(newCell.position);
 
 				if(index.Equals(cellIndex))
                     cell = newCell;

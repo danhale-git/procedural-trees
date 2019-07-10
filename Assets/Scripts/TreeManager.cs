@@ -10,7 +10,6 @@ public class TreeManager : MonoBehaviour
     WorleyNoise worley;
 
     BowyerWatson bowyerWatson;
-    DirichletTessellation dirichlet;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
