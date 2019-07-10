@@ -14,7 +14,6 @@ public struct TreeGenerator
     NativeArray<float3> cellVertices;
 
     NativeList<float3> vertices;
-    NativeList<float3> normals;
     NativeList<int> triangles;
 
     Unity.Mathematics.Random random;
@@ -23,16 +22,17 @@ public struct TreeGenerator
     public void Generate(int2 cellIndex)
     {
         vertices = new NativeList<float3>(Allocator.Temp);
-        normals = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
         cellVertices = worley.GetCellVertices(cellIndex, UnityEngine.Color.blue);
+        WorldToLocal(cellVertices);
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
-        Crown(12, worley.frequency*1.75f);
-        //DrawLeavesInSegment(8, worley.frequency*3);
+        float height = random.NextFloat(12, 18);
+        height = random.NextFloat(12, 18);
+        Crown(height, worley.frequency*1.75f);
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
@@ -46,29 +46,46 @@ public struct TreeGenerator
         MakeMesh();
 
         vertices.Dispose();
-        normals.Dispose();
         triangles.Dispose();
         cellVertices.Dispose();
+    }
+
+    void WorldToLocal(NativeArray<float3> worldPositions)
+    {
+        for(int i = 0; i < worldPositions.Length; i++)
+            worldPositions[i] = worldPositions[i] - cell.position;
+    }
+
+    NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, float3 centre, int minAngle)
+    {
+        NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
+
+        for(int i = 0; i < originalVertices.Length; i++)
+        {
+            int nextIndex = i == originalVertices.Length-1 ? 0 : i+1;
+            
+            float3 currentVertex = originalVertices[i] - centre;
+            float3 nextVertex = originalVertices[nextIndex] - centre;
+
+            if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
+                trimmed.Add(originalVertices[i]);
+        }
+
+        NativeArray<float3> trimmedArray = new NativeArray<float3>(trimmed.Length, Allocator.Temp);
+        trimmedArray.CopyFrom(trimmed);
+        trimmed.Dispose();
+
+        return trimmedArray;
     }
 
     NativeArray<int> TrunkVertices(float size)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        for(int i = 0; i < cellVertices.Length; i++)
+        NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, float3.zero, 20);
+
+        for(int i = 0; i < verticesTrimmed.Length; i++)
         {
-            int nextIndex = i == cellVertices.Length-1 ? 0 : i+1;
-            
-            float3 currentVertex = cellVertices[i] - cell.position;
-            float3 nextVertex = cellVertices[nextIndex] - cell.position;
-
-            if(vectorUtil.Angle(currentVertex, nextVertex) < 20)
-                continue;
-
-            float3 trunkVertex = currentVertex * size;
-
-            vertices.Add(trunkVertex);
-            float3 normal = trunkVertex - cell.position;
-            normals.Add(normal);
+            vertices.Add(verticesTrimmed[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
@@ -90,9 +107,6 @@ public struct TreeGenerator
             float3 endVertex = (startVertex * scale) + extrusion;
 
             vertices.Add(endVertex);
-            float3 normal = endVertex - cell.position;
-            normal.y = 0;
-            normals.Add(normal);
             endIndices[i] = vertices.Length-1;
         }
 
@@ -119,20 +133,25 @@ public struct TreeGenerator
         newWorley.frequency = frequency;
 
         NativeList<WorleyNoise.CellData> children = GetCellChildren(newWorley);
-        for(int i = 0; i < children.Length; i++)
+        Leaves leaves = new Leaves(vertices, triangles, cell, random);
+        float3 midPoint = vectorUtil.MeanPoint(cellVertices);
+        leaves.Draw(cellVertices, midPoint, height);
+        /*for(int i = 0; i < children.Length; i++)
         {
             NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index, UnityEngine.Color.green);
-            float3 meanPoint = vectorUtil.MeanPoint(edgeVertices);
-            //TODO process vertices and center y axis point here
-            DrawLeaves(edgeVertices, meanPoint, height);
-        }  
-        /*float3 meanPoint = vectorUtil.MeanPoint(cellVertices);
-        NativeArray<float3> verticesCopy = new NativeArray<float3>(cellVertices.Length, Allocator.Temp);
-        verticesCopy.CopyFrom(cellVertices);
-        DrawLeaves(verticesCopy, meanPoint, height); */
+            WorldToLocal(edgeVertices);
+
+            NativeArray<float3> edgeVerticesTrimmed = RemoveThinSegments(edgeVertices, children[i].position - cell.position, 20);
+            float3 meanPoint = vectorUtil.MeanPoint(edgeVerticesTrimmed);
+            leaves.Draw(edgeVerticesTrimmed, meanPoint, height);
+
+            edgeVertices.Dispose();
+            edgeVerticesTrimmed.Dispose();
+        }  */
+        children.Dispose();
     }
 
-    void DrawLeavesInSegment(float height, float2 frequency)
+    /*void DrawLeavesInSegment(float height, float2 frequency)
     {
         WorleyNoise newWorley = worley;
         newWorley.frequency = frequency;
@@ -144,7 +163,7 @@ public struct TreeGenerator
             WorleyNoise.CellData childCell = children[i];
             DrawLeaves(newWorley.GetCellVertices(childCell.index, UnityEngine.Color.red), childCell.position, height);
         }
-    }
+    } */
 
     NativeList<WorleyNoise.CellData> GetSegmentChildren(WorleyNoise newWorley)
     {
@@ -254,53 +273,7 @@ public struct TreeGenerator
         }
 
         cellEdgeVertexPositions.Dispose();
-    }
-
-    void DrawLeaves(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
-    {
-        float centerYOffset = FarthestEdgeVertex(cellEdgeVertexPositions, centerPosition) * 0.25f;
-
-        float3 centerVertex = centerPosition - cell.position;
-        centerVertex.y += height + centerYOffset - (math.length(centerVertex) * 0.5f);
-        vertices.Add(centerVertex);
-        normals.Add(new float3(0, 1, 0));        
-
-        int cellCenter = vertices.Length-1;
-        int vertexIndex = vertices.Length;
-
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            float3 vertex = cellEdgeVertexPositions[i] - cell.position;
-            vertex.y += height - (math.length(vertex) * 0.5f);
-            vertices.Add(vertex);
-
-            normals.Add(math.normalize(cellEdgeVertexPositions[i] - centerPosition) + new float3(0, 0.25f, 0));
-        }
-            
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
-
-            triangles.Add(currentEdge);
-            triangles.Add(nextEdge);
-            triangles.Add(cellCenter);            
-        }
-
-        cellEdgeVertexPositions.Dispose();
-    }
-
-    float FarthestEdgeVertex(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition)
-    {
-        float longestDistance = 0;
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            float distance = math.length(cellEdgeVertexPositions[i] - centerPosition);
-            if(distance > longestDistance)
-                longestDistance = distance;
-        }
-        return longestDistance;
-    }
+    }  
 
     void MakeMesh()
     {
@@ -308,26 +281,21 @@ public struct TreeGenerator
         for(int i = 0; i < vertices.Length; i++)
             vertexList.Add(vertices[i]);
 
-        List<Vector3> normalList = new List<Vector3>();
-        for(int i = 0; i < normals.Length; i++)
-            normalList.Add(normals[i]);
-
         GameObject meshObject = GameObject.Instantiate(meshPrefab);
         MeshFilter meshFilter = meshObject.GetComponent<MeshFilter>();
         MeshRenderer meshRenderer = meshObject.GetComponent<MeshRenderer>();
 
         Mesh mesh = new Mesh();
         mesh.SetVertices(vertexList);
-        mesh.SetNormals(normalList);
         mesh.triangles = triangles.ToArray();
-        //mesh.RecalculateNormals();
+        mesh.RecalculateNormals();
 
         meshRenderer.material = this.material;
         meshFilter.mesh = mesh;
 
         float3 randomColor = random.NextFloat3();
-        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
-        //meshRenderer.material.color = new Color(.9f,.9f,.9f);
+        //meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
+        meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
         meshObject.transform.Translate(cell.position);
     }

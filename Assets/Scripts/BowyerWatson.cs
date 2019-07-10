@@ -1,12 +1,16 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct BowyerWatsonTriangulation
+public struct BowyerWatson
 {
+    WorleyNoise.CellProfile cellProfile;
+
     NativeList<float2> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
+
+    NativeList<float3> edgeVertices;
 
     Triangle superTriangle;
 
@@ -31,17 +35,16 @@ public struct BowyerWatsonTriangulation
         }
     }
 
-    struct Triangle
+    public struct Triangle : System.IComparable<Triangle>
     {
-        public Triangle(float2 a, float2 b, float2 c)
-        {
-            this.a = a;
-            this.b = b;
-            this.c = c;
-            this.circumcircle = new Circumcircle(a, b, c);
-        }
-        public readonly float2 a, b, c;
+        public float2 a, b, c;
         public Circumcircle circumcircle;
+        public float degreesFromUp;
+
+        public int CompareTo(Triangle other)
+        {
+            return degreesFromUp.CompareTo(other.degreesFromUp);
+        }
 
         public float2 this[int i]
         {
@@ -56,47 +59,42 @@ public struct BowyerWatsonTriangulation
                 }
             }
         }
-
-        public static implicit operator float2x4(Triangle t)
-        {
-            float2x4 converted = new float2x4{
-                c0 = t.a,
-                c1 = t.b,
-                c2 = t.c,
-                c3 = t.circumcircle.center
-            };
-
-            return converted;
-        }
     }
 
-    struct Circumcircle
+    public struct Circumcircle
 	{
-        public Circumcircle(float2 a, float2 b, float2 c)
+		public readonly float2 center;
+		public readonly float radius;
+
+        public Circumcircle(float2 center, float radius)
         {
-            float dA, dB, dC, aux1, aux2, div;
-	
-            dA = a.x * a.x + a.y * a.y;
-            dB = b.x * b.x + b.y * b.y;
-            dC = c.x * c.x + c.y * c.y;
-        
-            aux1 = (dA*(c.y - b.y) + dB*(a.y - c.y) + dC*(b.y - a.y));
-            aux2 = -(dA*(c.x - b.x) + dB*(a.x - c.x) + dC*(b.x - a.x));
-            div = (2*(a.x*(c.y - b.y) + b.x*(a.y-c.y) + c.x*(b.y - a.y)));
-        
-            this.center = new float2(aux1/div, aux2/div);
-            this.radius = math.sqrt((center.x - a.x)*(center.x - a.x) + (center.y - a.y)*(center.y - a.y));
+            this.center = center;
+            this.radius = radius;
         }
-		public float2 center;
-		public float radius;
 	}
 
-    public NativeArray<float2x4> Triangulate(NativeList<float2> points)
+    public WorleyNoise.CellProfile GetCellProfile(NativeList<float2> points, WorleyNoise.CellData cell)
     {
+        this.cellProfile = new WorleyNoise.CellProfile();
+        this.cellProfile.cell = cell;
+
         this.points = points;
-        triangles = new NativeList<Triangle>(Allocator.Persistent);
-        superTriangle = SuperTriangle();
-        triangles.Add(superTriangle);
+        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
+        this.edgeVertices = new NativeList<float3>(Allocator.Temp);
+        
+        BowyerWatsonTriangulation();
+
+        GetWorleyCellVertices();
+
+        points.Dispose();
+        triangles.Dispose();
+
+        return cellProfile;
+    }
+
+    void BowyerWatsonTriangulation()
+    {
+        triangles.Add(SuperTriangle());
 
         for(int i = 0; i < points.Length; i++)
         {
@@ -109,17 +107,6 @@ public struct BowyerWatsonTriangulation
 
             edges.Dispose();
         }
-
-        RemoveExternalTriangles();
-        
-        NativeArray<float2x4> delaunayTriangles = new NativeArray<float2x4>(triangles.Length, Allocator.Persistent);
-        for(int i = 0; i < triangles.Length; i++)
-            delaunayTriangles[i] = triangles[i];
-        
-        points.Dispose();
-        triangles.Dispose();
-
-        return delaunayTriangles;
     }
 
     void RemoveIntersectingTriangles(float2 point)
@@ -183,6 +170,8 @@ public struct BowyerWatsonTriangulation
     {
         NativeArray<float2> vertices = new NativeArray<float2>(3, Allocator.Temp);
 
+        float2 cellPosition2D = new float2(cellProfile.cell.position.x, cellProfile.cell.position.z);
+
         for(int i = 0; i < edges.Length; i++)
         {
             vertices[0] = edges[i].a;
@@ -192,14 +181,48 @@ public struct BowyerWatsonTriangulation
             float2 triangleCenter = vectorUtil.MeanPoint(vertices);
             vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
 
-            Triangle triangle = new Triangle(
-                vertices[0],
-                vertices[1],
-                vertices[2]
-            );
+            Triangle triangle = new Triangle();
+            triangle.a = vertices[0];
+            triangle.b = vertices[1];
+            triangle.c = vertices[2];
+            triangle.circumcircle = GetCircumcircle(vertices[0], vertices[1], vertices[2]);
+            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition2D);
 
             triangles.Add(triangle);
         }
+
+        vertices.Dispose();
+    }
+
+    public Circumcircle GetCircumcircle(float2 a, float2 b, float2 c)
+    {
+        float dA, dB, dC, aux1, aux2, div;
+
+        dA = a.x * a.x + a.y * a.y;
+        dB = b.x * b.x + b.y * b.y;
+        dC = c.x * c.x + c.y * c.y;
+    
+        aux1 = (dA*(c.y - b.y) + dB*(a.y - c.y) + dC*(b.y - a.y));
+        aux2 = -(dA*(c.x - b.x) + dB*(a.x - c.x) + dC*(b.x - a.x));
+        div = (2*(a.x*(c.y - b.y) + b.x*(a.y-c.y) + c.x*(b.y - a.y)));
+
+        float2 center = new float2(aux1/div, aux2/div);
+        float radius = math.sqrt((center.x - a.x)*(center.x - a.x) + (center.y - a.y)*(center.y - a.y));
+
+        return new Circumcircle(center, radius);
+    }
+
+    void GetWorleyCellVertices()
+    {
+        RemoveExternalTriangles();
+        
+        SortTrianglesClockwise();
+
+        GatherCellEdgeVertices();
+
+        var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
+        vertexArray.CopyFrom(edgeVertices);
+        cellProfile.vertices = vertexArray;
     }
 
     void RemoveExternalTriangles()
@@ -224,6 +247,49 @@ public struct BowyerWatsonTriangulation
                     return true;
 
         return false;
+    }
+
+    void SortTrianglesClockwise()
+    {
+        var sortedTriangles = new NativeArray<Triangle>(triangles.Length, Allocator.Temp);
+        sortedTriangles.CopyFrom(triangles);
+        sortedTriangles.Sort();
+        sortedTriangles.CopyTo(triangles);
+        sortedTriangles.Dispose();
+    }
+
+    void GatherCellEdgeVertices()
+    {
+        float2 centerPoint = new float2(cellProfile.cell.position.x, (float)cellProfile.cell.position.z);
+
+        for(int t = 0; t < triangles.Length; t++)
+        {
+            BowyerWatson.Triangle triangle = triangles[t];
+
+            bool triangleInCell = false;
+            int floatIndex = 0;
+            float2x2 adjacentCellPair = float2x2.zero;
+
+            for(int i = 0; i < 3; i++)
+                if(triangle[i].Equals(centerPoint))
+                {
+                    triangleInCell = true;
+                }
+                else
+                {
+                    if(floatIndex > 1)
+                        continue;
+
+                    adjacentCellPair[floatIndex] = triangle[i];
+                    floatIndex++;
+                }
+
+            if(triangleInCell)
+            {
+                float2 c = triangle.circumcircle.center;
+                edgeVertices.Add(new float3(c.x, 0, c.y));
+            }
+        }
     }
 
     Triangle SuperTriangle()
@@ -256,7 +322,11 @@ public struct BowyerWatsonTriangulation
             bottom + new float2(1, 0)
         );
 
-        Triangle triangle = new Triangle(topIntersect, rightIntersect, leftIntersect);
+        Triangle triangle = new Triangle();
+        triangle.a = topIntersect;
+        triangle.b = rightIntersect;
+        triangle.c = leftIntersect;
+        triangle.circumcircle = GetCircumcircle(triangle.a, triangle.b, triangle.c);
 
         return triangle;
     }
@@ -286,4 +356,38 @@ public struct BowyerWatsonTriangulation
 
 		return point;
 	}
+
+    //DEBUG
+    void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
+    {
+        float3 a3 = new float3(a.x, 0, a.y);
+        float3 b3 = new float3(b.x, 0, b.y);
+        UnityEngine.Debug.DrawLine(a3, b3, color, 100);
+    }
+    void DrawPoint(float2 point, UnityEngine.Color color)
+    {
+        var offsets = new AdjacentIntOffsetsClockwise();
+        for(int i = 0; i < 4; i++)
+        {
+            DrawLineFloat2(point + offsets[i], point-offsets[i], color);
+        }
+    }
+
+    /*void DrawEdges(UnityEngine.Color color)
+    {
+        for(int i = 0; i < edgeVertices.Length; i++)//DEBUG
+        {
+            int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
+            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
+        }//DEBUG
+    }
+    void DrawAdjacent(UnityEngine.Color color)
+    {
+        for(int i = 0; i < adjacentCellPositions.Length; i++)
+        {
+            DrawLineFloat2(adjacentCellPositions[i].c0, centerPoint, color);
+            DrawLineFloat2(adjacentCellPositions[i].c1, centerPoint, color);
+        }
+    } */
+    //DEBUG
 }

@@ -4,56 +4,93 @@ using Unity.Mathematics;
 public struct DirichletTessellation
 {
     NativeList<float2> edgeVertices;
+    NativeList<float2x2> adjacentCellPositions;
     float2 centerPoint;
     
     VectorUtil vectorUtil;
 
-    public NativeList<float2> Tessalate(NativeArray<float2x4> triangles, float3 point, UnityEngine.Color debugColor)
+    public NativeList<float2> Tessalate(NativeArray<BowyerWatson.Triangle> triangles, float3 point, UnityEngine.Color debugColor, out NativeArray<float2x2> adjacentPositions)
     {
-        this.edgeVertices = new NativeList<float2>(Allocator.TempJob);
+        this.edgeVertices = new NativeList<float2>(Allocator.Temp);
+        this.adjacentCellPositions = new NativeList<float2x2>(Allocator.Temp);
         this.centerPoint = new float2(point.x, (float)point.z);
 
-        for(int i = 0; i < triangles.Length; i++)
-            GatherCellEdgeVertices(triangles[i], centerPoint);
-        
-        vectorUtil.SortVerticesClockwise(edgeVertices, centerPoint);
-        RemoveDuplicateVertices();
+        SortTrianglesClockwise(triangles, centerPoint);
 
+        GatherCellEdgeVertices(triangles, centerPoint);
+        
         DrawEdges(debugColor);//DEBUG
+        //DrawAdjacent(debugColor);//DEBUG
+
+        adjacentPositions = adjacentCellPositions;
 
         return edgeVertices;
     }
 
-    void GatherCellEdgeVertices(float2x4 triangle, float2 centerPoint)
+    void GatherCellEdgeVertices(NativeArray<BowyerWatson.Triangle> triangles, float2 centerPoint)
     {
-        bool triangleInCell = false;
-        int notAtEdge = 0;
+        for(int t = 0; t < triangles.Length; t++)
+        {
+            BowyerWatson.Triangle triangle = triangles[t];
 
-        for(int i = 0; i < 3; i++)
-            if(triangle[i].Equals(centerPoint))
+            bool triangleInCell = false;
+            int floatIndex = 0;
+            float2x2 adjacentCellPair = float2x2.zero;
+
+            for(int i = 0; i < 3; i++)
+                if(triangle[i].Equals(centerPoint))
+                {
+                    triangleInCell = true;
+                }
+                else
+                {
+                    if(floatIndex > 1)
+                        continue;
+
+                    adjacentCellPair[floatIndex] = triangle[i];
+                    floatIndex++;
+                }
+
+            if(triangleInCell)
             {
-                triangleInCell = true;
-                notAtEdge = i;
+                edgeVertices.Add(triangle.circumcircle.center);
+                adjacentCellPositions.Add(adjacentCellPair);
             }
-
-        if(!triangleInCell)
-            return;
-
-        float2 circumcenter = triangle[3];
-        for(int i = 0; i < 3; i++)
-            if(i != notAtEdge)
-                edgeVertices.Add(new float2(circumcenter));
+        }
     }
 
-    void RemoveDuplicateVertices()
+    struct VertexRotation : System.IComparable<VertexRotation>
     {
-        NativeArray<float2> edgeVerticesCopy = new NativeArray<float2>(edgeVertices.Length, Allocator.Temp);
-        edgeVerticesCopy.CopyFrom(edgeVertices);
+        public readonly BowyerWatson.Triangle triangle;
+        public readonly float degrees;
 
-        edgeVertices.Clear();
+        public VertexRotation(BowyerWatson.Triangle triangle, float angle)
+        {
+            this.triangle = triangle;
+            this.degrees = angle;
+        }
 
-        for(int i = 0; i < edgeVerticesCopy.Length;i += 2)
-            edgeVertices.Add(edgeVerticesCopy[i]);
+        public int CompareTo(VertexRotation otherVertAngle)
+        {
+            return degrees.CompareTo(otherVertAngle.degrees);
+        }
+    }
+
+    public NativeArray<BowyerWatson.Triangle> SortTrianglesClockwise(NativeArray<BowyerWatson.Triangle> triangles, float2 center)
+    {
+        NativeArray<VertexRotation> sorter = new NativeArray<VertexRotation>(triangles.Length, Allocator.Temp);
+        for(int i = 0; i < triangles.Length; i++)
+        {
+            float rotationInDegrees = vectorUtil.RotationFromUp(triangles[i].circumcircle.center, center);
+            sorter[i] = new VertexRotation(triangles[i], rotationInDegrees);
+        }
+
+        sorter.Sort();
+
+        for(int i = 0; i < triangles.Length; i++)
+            triangles[i] = sorter[i].triangle;
+
+        return triangles;                
     }
 
     //DEBUG
@@ -79,6 +116,14 @@ public struct DirichletTessellation
             int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
             DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
         }//DEBUG
+    }
+    void DrawAdjacent(UnityEngine.Color color)
+    {
+        for(int i = 0; i < adjacentCellPositions.Length; i++)
+        {
+            DrawLineFloat2(adjacentCellPositions[i].c0, centerPoint, color);
+            DrawLineFloat2(adjacentCellPositions[i].c1, centerPoint, color);
+        }
     }
     //DEBUG
 }
