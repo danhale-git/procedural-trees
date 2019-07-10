@@ -329,6 +329,10 @@ public struct BowyerWatson
         triangle.c = new float3(leftIntersect.x, 0, leftIntersect.y);
         triangle.circumcircle = GetCircumcircle(triangle.a, triangle.b, triangle.c);
 
+        DrawLineFloat3(triangle.a, triangle.b, UnityEngine.Color.green);
+        DrawLineFloat3(triangle.a, triangle.c, UnityEngine.Color.green);
+        DrawLineFloat3(triangle.c, triangle.b, UnityEngine.Color.green);
+
         return triangle;
     }
 
@@ -359,20 +363,18 @@ public struct BowyerWatson
 	}
 
     //DEBUG
-    void DrawLineFloat2(float2 a, float2 b, UnityEngine.Color color)
+    void DrawLineFloat3(float3 a, float3 b, UnityEngine.Color color)
     {
-        float3 a3 = new float3(a.x, 0, a.y);
-        float3 b3 = new float3(b.x, 0, b.y);
-        UnityEngine.Debug.DrawLine(a3, b3, color, 100);
+        UnityEngine.Debug.DrawLine(a, b, color, 100);
     }
-    void DrawPoint(float2 point, UnityEngine.Color color)
+    /*void DrawPoint(float2 point, UnityEngine.Color color)
     {
         var offsets = new AdjacentIntOffsetsClockwise();
         for(int i = 0; i < 4; i++)
         {
             DrawLineFloat2(point + offsets[i], point-offsets[i], color);
         }
-    }
+    } */
 
     /*void DrawEdges(UnityEngine.Color color)
     {
