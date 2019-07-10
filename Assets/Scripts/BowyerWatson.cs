@@ -294,44 +294,39 @@ public struct BowyerWatson
 
     Triangle SuperTriangle()
     {
-        float3 center3D = vectorUtil.MeanPoint(points);
-        float2 center = new float2(center3D.x, center3D.z);
-        float radius = IncircleRadius(center3D);
+        float3 center = vectorUtil.MeanPoint(points);
+        float radius = IncircleRadius(center);
 
-        float2 topRight = center + new float2(radius, radius);
-        float2 topLeft = center + new float2(-radius, radius);
-        float2 bottom = center + new float2(0, -radius);
+        float3 topRight = center + new float3(radius, 0, radius);
+        float3 topLeft = center + new float3(-radius, 0, radius);
+        float3 bottom = center + new float3(0, 0, -radius);
 
-        float2 topIntersect = LineIntersection(
+        float3 topIntersect = LineIntersection(
             topRight,
-            topRight + new float2(-1, 1),
+            topRight + new float3(-1, 0, 1),
             topLeft,
-            topLeft + new float2(1, 1)
+            topLeft + new float3(1, 0, 1)
         );
 
-        float2 leftIntersect = LineIntersection(
+        float3 leftIntersect = LineIntersection(
             topLeft,
-            topLeft + new float2(-1, -1),
+            topLeft + new float3(-1, 0, -1),
             bottom,
-            bottom + new float2(-1, 0)
+            bottom + new float3(-1, 0, 0)
         );
 
-        float2 rightIntersect = LineIntersection(
+        float3 rightIntersect = LineIntersection(
             topRight,
-            topRight + new float2(1, -1),
+            topRight + new float3(1, 0, -1),
             bottom,
-            bottom + new float2(1, 0)
+            bottom + new float3(1, 0, 0)
         );
 
         Triangle triangle = new Triangle();
-        triangle.a = new float3(topIntersect.x, 0, topIntersect.y);
-        triangle.b = new float3(rightIntersect.x, 0, rightIntersect.y);
-        triangle.c = new float3(leftIntersect.x, 0, leftIntersect.y);
+        triangle.a = topIntersect;
+        triangle.b = rightIntersect;
+        triangle.c = leftIntersect;
         triangle.circumcircle = GetCircumcircle(triangle.a, triangle.b, triangle.c);
-
-        DrawLineFloat3(triangle.a, triangle.b, UnityEngine.Color.green);
-        DrawLineFloat3(triangle.a, triangle.c, UnityEngine.Color.green);
-        DrawLineFloat3(triangle.c, triangle.b, UnityEngine.Color.green);
 
         return triangle;
     }
@@ -349,14 +344,15 @@ public struct BowyerWatson
         return largestDistance + 1;
     }
 
-    public float2 LineIntersection(float2 A1, float2 A2, float2 B1, float2 B2)
+    public float3 LineIntersection(float3 A1, float3 A2, float3 B1, float3 B2)
 	{
-		float tmp = (B2.x - B1.x) * (A2.y - A1.y) - (B2.y - B1.y) * (A2.x - A1.x);
-		float mu = ((A1.x - B1.x) * (A2.y - A1.y) - (A1.y - B1.y) * (A2.x - A1.x)) / tmp;
+		float tmp = (B2.x - B1.x) * (A2.z - A1.z) - (B2.z - B1.z) * (A2.x - A1.x);
+		float mu = ((A1.x - B1.x) * (A2.z - A1.z) - (A1.z - B1.z) * (A2.x - A1.x)) / tmp;
 	
-		float2 point = new float2(
+		float3 point = new float3(
 			B1.x + (B2.x - B1.x) * mu,
-			B1.y + (B2.y - B1.y) * mu
+            0,
+			B1.z + (B2.z - B1.z) * mu
 		);
 
 		return point;
