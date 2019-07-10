@@ -5,7 +5,7 @@ public struct BowyerWatson
 {
     WorleyNoise.CellProfile cellProfile;
 
-    NativeList<float2> points;
+    NativeList<float3> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
@@ -18,12 +18,12 @@ public struct BowyerWatson
 
     struct Edge
     {
-        public Edge(float2 a, float2 b)
+        public Edge(float3 a, float3 b)
         {
             this.a = a;
             this.b = b;
         }
-        public readonly float2 a, b;
+        public readonly float3 a, b;
 
         public bool Equals(Edge other)
         {
@@ -37,7 +37,7 @@ public struct BowyerWatson
 
     public struct Triangle : System.IComparable<Triangle>
     {
-        public float2 a, b, c;
+        public float3 a, b, c;
         public Circumcircle circumcircle;
         public float degreesFromUp;
 
@@ -46,7 +46,7 @@ public struct BowyerWatson
             return degreesFromUp.CompareTo(other.degreesFromUp);
         }
 
-        public float2 this[int i]
+        public float3 this[int i]
         {
             get
             {
@@ -73,7 +73,7 @@ public struct BowyerWatson
         }
 	}
 
-    public WorleyNoise.CellProfile GetCellProfile(NativeList<float2> points, WorleyNoise.CellData cell)
+    public WorleyNoise.CellProfile GetCellProfile(NativeList<float3> points, WorleyNoise.CellData cell)
     {
         this.cellProfile = new WorleyNoise.CellProfile();
         this.cellProfile.cell = cell;
@@ -99,7 +99,7 @@ public struct BowyerWatson
         for(int i = 0; i < points.Length; i++)
         {
             edges = new NativeList<Edge>(Allocator.Temp);
-            float2 point = points[i];
+            float3 point = points[i];
 
             RemoveIntersectingTriangles(point);
 
@@ -109,7 +109,7 @@ public struct BowyerWatson
         }
     }
 
-    void RemoveIntersectingTriangles(float2 point)
+    void RemoveIntersectingTriangles(float3 point)
     {
         NativeArray<Triangle> trianglesCopy = CopyAndClearTrianglesArray();
 
