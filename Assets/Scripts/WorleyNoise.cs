@@ -69,7 +69,7 @@ public struct WorleyNoise
 
 	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
     {
-        var points = new NativeList<float3>(Allocator.Temp);
+        var points = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
 		//List of adjacent CellData
 
 		WorleyNoise.CellData cell = new WorleyNoise.CellData();
@@ -79,7 +79,7 @@ public struct WorleyNoise
             {
                 int2 index = new int2(x, z) + cellIndex;
                 WorleyNoise.CellData newCell = GetCellData(index);
-                points.Add(newCell.position);
+                points.Add(newCell);
 
 				if(index.Equals(cellIndex))
                     cell = newCell;

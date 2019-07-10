@@ -5,7 +5,7 @@ public struct BowyerWatson
 {
     WorleyNoise.CellProfile cellProfile;
 
-    NativeList<float3> points;
+    NativeList<Vertex> points;
 
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
@@ -16,14 +16,32 @@ public struct BowyerWatson
 
     VectorUtil vectorUtil;
 
+    public struct Vertex
+    {
+        public readonly float3 pos;
+        public readonly WorleyNoise.CellData cell;
+        
+        public Vertex(WorleyNoise.CellData cell)
+        {
+            this.cell = cell;
+            this.pos = cell.position;
+        }
+
+        public Vertex(float3 pos)
+        {
+            this.cell = new WorleyNoise.CellData();
+            this.pos = pos;
+        }
+    }
+
     struct Edge
     {
-        public Edge(float3 a, float3 b)
+        public Edge(Vertex a, Vertex b)
         {
             this.a = a;
             this.b = b;
         }
-        public readonly float3 a, b;
+        public readonly Vertex a, b;
 
         public bool Equals(Edge other)
         {
@@ -37,7 +55,7 @@ public struct BowyerWatson
 
     public struct Triangle : System.IComparable<Triangle>
     {
-        public float3 a, b, c;
+        public Vertex a, b, c;
         public Circumcircle circumcircle;
         public float degreesFromUp;
 
@@ -46,7 +64,7 @@ public struct BowyerWatson
             return degreesFromUp.CompareTo(other.degreesFromUp);
         }
 
-        public float3 this[int i]
+        public Vertex this[int i]
         {
             get
             {
@@ -73,12 +91,17 @@ public struct BowyerWatson
         }
 	}
 
-    public WorleyNoise.CellProfile GetCellProfile(NativeList<float3> points, WorleyNoise.CellData cell)
+    public WorleyNoise.CellProfile GetCellProfile(NativeList<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
         this.cellProfile = new WorleyNoise.CellProfile();
         this.cellProfile.cell = cell;
 
-        this.points = points;
+        this.points = new NativeList<Vertex>(Allocator.Temp);
+        for(int i = 0; i < nineCells.Length; i++)
+        {
+            points.Add(new Vertex(nineCells[i]));
+        }
+
         this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         this.edgeVertices = new NativeList<float3>(Allocator.Temp);
         
@@ -99,7 +122,7 @@ public struct BowyerWatson
         for(int i = 0; i < points.Length; i++)
         {
             edges = new NativeList<Edge>(Allocator.Temp);
-            float3 point = points[i];
+            Vertex point = points[i];
 
             RemoveIntersectingTriangles(point);
 
@@ -109,14 +132,14 @@ public struct BowyerWatson
         }
     }
 
-    void RemoveIntersectingTriangles(float3 point)
+    void RemoveIntersectingTriangles(Vertex vert)
     {
         NativeArray<Triangle> trianglesCopy = CopyAndClearTrianglesArray();
 
         for(int i = 0; i < trianglesCopy.Length; i++)
         {
             Triangle triangle = trianglesCopy[i];
-            float distanceFromCircumcircle = math.length(triangle.circumcircle.center - point);
+            float distanceFromCircumcircle = math.length(triangle.circumcircle.center - vert.pos);
             bool pointIsInCircumcircle = distanceFromCircumcircle < triangle.circumcircle.radius;
 
             if(pointIsInCircumcircle)
@@ -166,9 +189,9 @@ public struct BowyerWatson
         return false;
     }
 
-    void AddNewTriangles(float3 point)
+    void AddNewTriangles(Vertex point)
     {
-        NativeArray<float3> vertices = new NativeArray<float3>(3, Allocator.Temp);
+        NativeArray<Vertex> vertices = new NativeArray<Vertex>(3, Allocator.Temp);
 
         float3 cellPosition2D = cellProfile.cell.position;
 
@@ -178,20 +201,30 @@ public struct BowyerWatson
             vertices[1] = edges[i].b;
             vertices[2] = point;
 
-            float3 triangleCenter = vectorUtil.MeanPoint(vertices);
-            vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
+            float3 triangleCenter = MeanPoint(vertices);
+            //vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
 
             Triangle triangle = new Triangle();
             triangle.a = vertices[0];
             triangle.b = vertices[1];
             triangle.c = vertices[2];
-            triangle.circumcircle = GetCircumcircle(vertices[0], vertices[1], vertices[2]);
+            triangle.circumcircle = GetCircumcircle(vertices[0].pos, vertices[1].pos, vertices[2].pos);
             triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition2D);
 
             triangles.Add(triangle);
         }
 
         vertices.Dispose();
+    }
+
+    float3 MeanPoint(NativeArray<Vertex> vertices)
+    {
+        float3 sum = float3.zero;
+        for(int i = 0; i < vertices.Length; i++)
+        {
+            sum += vertices[i].pos;
+        }
+        return sum / vertices.Length;
     }
 
     public Circumcircle GetCircumcircle(float3 a, float3 b, float3 c)
@@ -271,7 +304,7 @@ public struct BowyerWatson
             float3x2 adjacentCellPair = float3x2.zero;
 
             for(int i = 0; i < 3; i++)
-                if(triangle[i].Equals(centerPoint))
+                if(triangle[i].pos.Equals(centerPoint))
                 {
                     triangleInCell = true;
                 }
@@ -280,7 +313,7 @@ public struct BowyerWatson
                     if(floatIndex > 1)
                         continue;
 
-                    adjacentCellPair[floatIndex] = triangle[i];
+                    adjacentCellPair[floatIndex] = triangle[i].pos;
                     floatIndex++;
                 }
 
@@ -288,13 +321,14 @@ public struct BowyerWatson
             {
                 float3 c = triangle.circumcircle.center;
                 edgeVertices.Add(c);
+                UnityEngine.Debug.Log(triangle.a.cell.index+" "+triangle.b.cell.index+" "+triangle.c.cell.index);
             }
         }
     }
 
     Triangle SuperTriangle()
     {
-        float3 center = vectorUtil.MeanPoint(points);
+        float3 center = MeanPoint(points);
         float radius = IncircleRadius(center);
 
         float3 topRight = center + new float3(radius, 0, radius);
@@ -323,10 +357,10 @@ public struct BowyerWatson
         );
 
         Triangle triangle = new Triangle();
-        triangle.a = topIntersect;
-        triangle.b = rightIntersect;
-        triangle.c = leftIntersect;
-        triangle.circumcircle = GetCircumcircle(triangle.a, triangle.b, triangle.c);
+        triangle.a = new Vertex(topIntersect);
+        triangle.b = new Vertex(rightIntersect);
+        triangle.c = new Vertex(leftIntersect);
+        triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
 
         return triangle;
     }
@@ -336,7 +370,7 @@ public struct BowyerWatson
         float largestDistance = 0;
         for(int i = 0; i < points.Length; i++)
         {
-            float distance = math.length(center - points[i]);
+            float distance = math.length(center - points[i].pos);
             if(distance > largestDistance)
                 largestDistance = distance;
         }
