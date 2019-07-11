@@ -30,8 +30,9 @@ public struct TreeGenerator
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 
         //Draw other cell
-        float height = random.NextFloat(12, 18);
-        height = random.NextFloat(12, 18);
+        //float height = random.NextFloat(12, 18);
+        //height = random.NextFloat(12, 18);
+        float height = 12;
         Crown(height, worley.frequency*1.75f);
         
         float3 min = new float3(-1, 0, -1);
@@ -56,7 +57,7 @@ public struct TreeGenerator
             worldPositions[i] = worldPositions[i] - cell.position;
     }
 
-    NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, float3 centre, int minAngle)
+    /*NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, float3 centre, int minAngle)
     {
         NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
 
@@ -76,16 +77,16 @@ public struct TreeGenerator
         trimmed.Dispose();
 
         return trimmedArray;
-    }
+    } */
 
     NativeArray<int> TrunkVertices(float size)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, float3.zero, 20);
+        //NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, float3.zero, 20);
 
-        for(int i = 0; i < verticesTrimmed.Length; i++)
+        for(int i = 0; i < cellVertices.Length; i++)
         {
-            vertices.Add(verticesTrimmed[i] * size);
+            vertices.Add(cellVertices[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
