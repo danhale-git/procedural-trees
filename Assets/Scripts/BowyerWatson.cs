@@ -273,6 +273,15 @@ public struct BowyerWatson
             vertices[1] = edges[i].b;
             vertices[2] = point;
 
+            float3 triangleCenter = MeanPoint(vertices);
+            for(int v = 0; v < 3; v++)
+            {
+                Vertex vertex = vertices[v];
+                //vertex.degreesFromUp = vectorUtil.RotationFromUp(vertices[v].pos, triangleCenter);
+                vertices[v] = vertex;
+            }
+            //vertices.Sort();
+
             Triangle triangle = new Triangle();
             triangle.a = vertices[0];
             triangle.b = vertices[1];
