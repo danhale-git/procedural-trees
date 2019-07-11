@@ -14,32 +14,41 @@ public struct BowyerWatson
 
     VectorUtil vectorUtil;
 
-    public struct Vertex
+    public struct Vertex : System.IComparable<Vertex>
     {
         public readonly float3 pos;
         public readonly WorleyNoise.CellData cell;
+        public float degreesFromUp;
         
         public Vertex(WorleyNoise.CellData cell)
         {
             this.cell = cell;
             this.pos = cell.position;
+            this.degreesFromUp = 0;
         }
 
         public Vertex(float3 pos)
         {
             this.cell = new WorleyNoise.CellData();
             this.pos = pos;
+            this.degreesFromUp = 0;
+        }
+
+        public int CompareTo(Vertex other)
+        {
+            return degreesFromUp.CompareTo(other.degreesFromUp);
         }
     }
 
     struct Edge
     {
+        public readonly Vertex a, b;
+        
         public Edge(Vertex a, Vertex b)
         {
             this.a = a;
             this.b = b;
         }
-        public readonly Vertex a, b;
 
         public bool Equals(Edge other)
         {
@@ -89,6 +98,7 @@ public struct BowyerWatson
         }
 	}
 
+    //TODO: rename script/struct and add small segment removal option
     public WorleyNoise.CellProfile GetCellProfile(NativeList<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
         this.cellPosition = cell.position;
@@ -129,6 +139,72 @@ public struct BowyerWatson
             edges.Dispose();
         }
     }
+
+    Triangle SuperTriangle()
+    {
+        float3 center = MeanPoint(points);
+        float radius = IncircleRadius(center);
+
+        float3 frontRight = center + new float3(radius, 0, radius);
+        float3 frontLeft = center + new float3(-radius, 0, radius);
+        float3 back = center + new float3(0, 0, -radius);
+
+        float3 frontVertex = LineIntersection(
+            frontRight,
+            frontRight + new float3(-1, 0, 1),
+            frontLeft,
+            frontLeft + new float3(1, 0, 1)
+        );
+
+        float3 leftVertex = LineIntersection(
+            frontLeft,
+            frontLeft + new float3(-1, 0, -1),
+            back,
+            back + new float3(-1, 0, 0)
+        );
+
+        float3 rightVertex = LineIntersection(
+            frontRight,
+            frontRight + new float3(1, 0, -1),
+            back,
+            back + new float3(1, 0, 0)
+        );
+
+        Triangle triangle = new Triangle();
+        triangle.a = new Vertex(frontVertex);
+        triangle.b = new Vertex(rightVertex);
+        triangle.c = new Vertex(leftVertex);
+        triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
+
+        return triangle;
+    }
+
+    public float IncircleRadius(float3 center)
+    {
+        float largestDistance = 0;
+        for(int i = 0; i < points.Length; i++)
+        {
+            float distance = math.length(center - points[i].pos);
+            if(distance > largestDistance)
+                largestDistance = distance;
+        }
+        
+        return largestDistance + 1;
+    }
+
+    public float3 LineIntersection(float3 A1, float3 A2, float3 B1, float3 B2)
+	{
+		float tmp = (B2.x - B1.x) * (A2.z - A1.z) - (B2.z - B1.z) * (A2.x - A1.x);
+		float mu = ((A1.x - B1.x) * (A2.z - A1.z) - (A1.z - B1.z) * (A2.x - A1.x)) / tmp;
+	
+		float3 point = new float3(
+			B1.x + (B2.x - B1.x) * mu,
+            0,
+			B1.z + (B2.z - B1.z) * mu
+		);
+
+		return point;
+	}
 
     void RemoveIntersectingTriangles(Vertex vert)
     {
@@ -191,23 +267,18 @@ public struct BowyerWatson
     {
         NativeArray<Vertex> vertices = new NativeArray<Vertex>(3, Allocator.Temp);
 
-        float3 cellPosition2D = cellPosition;
-
         for(int i = 0; i < edges.Length; i++)
         {
             vertices[0] = edges[i].a;
             vertices[1] = edges[i].b;
             vertices[2] = point;
 
-            //float3 triangleCenter = MeanPoint(vertices);
-            //vectorUtil.SortVerticesClockwise(vertices, triangleCenter);
-
             Triangle triangle = new Triangle();
             triangle.a = vertices[0];
             triangle.b = vertices[1];
             triangle.c = vertices[2];
             triangle.circumcircle = GetCircumcircle(vertices[0].pos, vertices[1].pos, vertices[2].pos);
-            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition2D);
+            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
 
             triangles.Add(triangle);
         }
@@ -316,102 +387,4 @@ public struct BowyerWatson
 
         return vertexArray;
     }
-
-    Triangle SuperTriangle()
-    {
-        float3 center = MeanPoint(points);
-        float radius = IncircleRadius(center);
-
-        float3 topRight = center + new float3(radius, 0, radius);
-        float3 topLeft = center + new float3(-radius, 0, radius);
-        float3 bottom = center + new float3(0, 0, -radius);
-
-        float3 topIntersect = LineIntersection(
-            topRight,
-            topRight + new float3(-1, 0, 1),
-            topLeft,
-            topLeft + new float3(1, 0, 1)
-        );
-
-        float3 leftIntersect = LineIntersection(
-            topLeft,
-            topLeft + new float3(-1, 0, -1),
-            bottom,
-            bottom + new float3(-1, 0, 0)
-        );
-
-        float3 rightIntersect = LineIntersection(
-            topRight,
-            topRight + new float3(1, 0, -1),
-            bottom,
-            bottom + new float3(1, 0, 0)
-        );
-
-        Triangle triangle = new Triangle();
-        triangle.a = new Vertex(topIntersect);
-        triangle.b = new Vertex(rightIntersect);
-        triangle.c = new Vertex(leftIntersect);
-        triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
-
-        return triangle;
-    }
-
-    public float IncircleRadius(float3 center)
-    {
-        float largestDistance = 0;
-        for(int i = 0; i < points.Length; i++)
-        {
-            float distance = math.length(center - points[i].pos);
-            if(distance > largestDistance)
-                largestDistance = distance;
-        }
-        
-        return largestDistance + 1;
-    }
-
-    public float3 LineIntersection(float3 A1, float3 A2, float3 B1, float3 B2)
-	{
-		float tmp = (B2.x - B1.x) * (A2.z - A1.z) - (B2.z - B1.z) * (A2.x - A1.x);
-		float mu = ((A1.x - B1.x) * (A2.z - A1.z) - (A1.z - B1.z) * (A2.x - A1.x)) / tmp;
-	
-		float3 point = new float3(
-			B1.x + (B2.x - B1.x) * mu,
-            0,
-			B1.z + (B2.z - B1.z) * mu
-		);
-
-		return point;
-	}
-
-    //DEBUG
-    void DrawLineFloat3(float3 a, float3 b, UnityEngine.Color color)
-    {
-        UnityEngine.Debug.DrawLine(a, b, color, 100);
-    }
-    /*void DrawPoint(float2 point, UnityEngine.Color color)
-    {
-        var offsets = new AdjacentIntOffsetsClockwise();
-        for(int i = 0; i < 4; i++)
-        {
-            DrawLineFloat2(point + offsets[i], point-offsets[i], color);
-        }
-    } */
-
-    /*void DrawEdges(UnityEngine.Color color)
-    {
-        for(int i = 0; i < edgeVertices.Length; i++)//DEBUG
-        {
-            int nextIndex = i == edgeVertices.Length-1 ? 0 : i+1;
-            DrawLineFloat2(edgeVertices[i], edgeVertices[nextIndex], color);
-        }//DEBUG
-    }
-    void DrawAdjacent(UnityEngine.Color color)
-    {
-        for(int i = 0; i < adjacentCellPositions.Length; i++)
-        {
-            DrawLineFloat2(adjacentCellPositions[i].c0, centerPoint, color);
-            DrawLineFloat2(adjacentCellPositions[i].c1, centerPoint, color);
-        }
-    } */
-    //DEBUG
 }
