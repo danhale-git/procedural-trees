@@ -3,7 +3,7 @@ using Unity.Collections;
 
 public struct BowyerWatson
 {
-    WorleyNoise.CellProfile cellProfile;
+    float3 cellPosition;
 
     NativeList<Vertex> points;
 
@@ -91,23 +91,20 @@ public struct BowyerWatson
 
     public WorleyNoise.CellProfile GetCellProfile(NativeList<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
-        this.cellProfile = new WorleyNoise.CellProfile();
-        this.cellProfile.cell = cell;
+        this.cellPosition = cell.position;
 
+        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         this.points = new NativeList<Vertex>(Allocator.Temp);
         for(int i = 0; i < nineCells.Length; i++)
             points.Add(new Vertex(nineCells[i]));
-
-        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         
         BowyerWatsonTriangulation();
-
         RemoveExternalTriangles();
-        
         SortTrianglesClockwise();
 
+        var cellProfile = new WorleyNoise.CellProfile();
+        cellProfile.cell = cell;
         cellProfile.vertices = GatherCellEdgeVertices(out cellProfile.adjacentCells);
-
         cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
 
         points.Dispose();
@@ -194,7 +191,7 @@ public struct BowyerWatson
     {
         NativeArray<Vertex> vertices = new NativeArray<Vertex>(3, Allocator.Temp);
 
-        float3 cellPosition2D = cellProfile.cell.position;
+        float3 cellPosition2D = cellPosition;
 
         for(int i = 0; i < edges.Length; i++)
         {
@@ -282,45 +279,39 @@ public struct BowyerWatson
 
     NativeArray<float3> GatherCellEdgeVertices(out NativeArray<WorleyNoise.CellDataX2> adjacentCellsArray)
     {
-        float3 centerPoint = cellProfile.cell.position;
-
         var edgeVertices = new NativeList<float3>(Allocator.Temp);
         var adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
 
         for(int t = 0; t < triangles.Length; t++)
         {
             BowyerWatson.Triangle triangle = triangles[t];
-
             bool triangleInCell = false;
+
             int floatIndex = 0;
-            WorleyNoise.CellDataX2 adjacentCellPair = new WorleyNoise.CellDataX2();
+            var adjacentCellPair = new WorleyNoise.CellDataX2();
 
             for(int i = 0; i < 3; i++)
-                if(triangle[i].pos.Equals(centerPoint))
-                {
+                if(triangle[i].pos.Equals(cellPosition))
                     triangleInCell = true;
-                }
+                else if(floatIndex > 1)
+                    continue;
                 else
                 {
-                    if(floatIndex > 1)
-                        continue;
-
                     adjacentCellPair[floatIndex] = triangle[i].cell;
                     floatIndex++;
                 }
 
             if(triangleInCell)
             {
-                float3 c = triangle.circumcircle.center;
-                edgeVertices.Add(c);
+                edgeVertices.Add(triangle.circumcircle.center);
                 adjacentCells.Add(adjacentCellPair);
             }
         }
 
         var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
-        vertexArray.CopyFrom(edgeVertices);
-        
         adjacentCellsArray = new NativeArray<WorleyNoise.CellDataX2>(edgeVertices.Length, Allocator.Temp);
+        
+        vertexArray.CopyFrom(edgeVertices);
         adjacentCellsArray.CopyFrom(adjacentCells);
 
         return vertexArray;
