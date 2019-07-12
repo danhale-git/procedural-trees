@@ -25,11 +25,6 @@ public struct Leaves
         float3 center = centerPosition + (drop * 0.5f);
         center.y += height;
 
-        int cellCenter = vertices.Length-1;
-        int vertexIndex = vertices.Length;
-
-        const float jitter = 0.4f;
-
         for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
         {
             bool final = i == cellEdgeVertexPositions.Length-1;
