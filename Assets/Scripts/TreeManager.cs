@@ -29,8 +29,8 @@ public class TreeManager : MonoBehaviour
         worley = new WorleyNoise()
         {
             frequency = 0.075f,
-            seed = random.NextInt(),
-            //seed = -625141570,
+            //seed = random.NextInt(),
+            seed = -625141570,
             perterbAmp = 0,
             cellularJitter = 0.3f,
             distanceFunction = WorleyNoise.DistanceFunction.Euclidean,

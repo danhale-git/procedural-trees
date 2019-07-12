@@ -5,84 +5,68 @@ public struct Leaves
 {
     NativeList<float3> vertices;
     NativeList<int> triangles;
-    WorleyNoise.CellData parent;
+    WorleyNoise.CellProfile cell;
     Random random;
 
     VectorUtil vectorUtil;
 
-    public Leaves(NativeList<float3> vertices, NativeList<int> triangles, WorleyNoise.CellData parent, Random random)
+    const int minSegmentAngle = 10;
+
+    public Leaves(NativeList<float3> vertices, NativeList<int> triangles, Random random)
     {
         this.vertices = vertices;
         this.triangles = triangles;
-        this.parent = parent;
         this.random = random;
+        cell = new WorleyNoise.CellProfile();
     }
 
-    public void Draw(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition, float height)
+    public void Draw(WorleyNoise.CellProfile cell)
     {
-        float drop = vectorUtil.FarthestDistance(cellEdgeVertexPositions, centerPosition) * 0.4f;
+        float3 center = vectorUtil.MeanPoint(cell.vertices);
 
-        float3 center = centerPosition + (drop * 0.5f);
-        center.y += height;
+        this.cell = cell;
 
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
+        //int vertexGroupSize = cell.vertices.Length / 3;
+        //int remainder = cell.vertices.Length % 3;
+
+        
+
+
+        for(int i = 0; i < cell.vertices.Length; i++)
         {
-            bool final = i == cellEdgeVertexPositions.Length-1;
-            
-            int currentEdge = i;
-            int nextEdge = final ? 0 : i+1;
+            int next = i == cell.vertices.Length-1 ? 0 : i+1;
 
-            float3 current = cellEdgeVertexPositions[currentEdge];
-            float3 next = cellEdgeVertexPositions[nextEdge];
-            current.y += height;
-            next.y += height;
+            bool skipNext = SegmentIsThin(i);
+            if(skipNext) continue;
 
-            float3 currentMid = vectorUtil.MidPoint(center, current, 0.6f);
-            float3 nextMid = vectorUtil.MidPoint(center, next, 0.6f);
-            float3 edge = vectorUtil.MidPoint(current, next);
+            float3 currentEdge = cell.vertices[i];
+            float3 nextEdge = cell.vertices[next];
 
-            VertAndTri(current, drop);
-            VertAndTri(edge, drop);
-            VertAndTri(currentMid);
-            
-            VertAndTri(edge, drop);
-            VertAndTri(next, drop);
-            VertAndTri(nextMid);
+            float3 currentMid = vectorUtil.MidPoint(center, currentEdge, 0.6f);
+            float3 nextMid = vectorUtil.MidPoint(center, nextEdge, 0.6f);
+            float3 edgeMid = vectorUtil.MidPoint(currentEdge, nextEdge);
 
-            VertAndTri(currentMid);
-            VertAndTri(edge, drop);
-            VertAndTri(nextMid);
-
-            VertAndTri(currentMid);
-            VertAndTri(nextMid);
+            VertAndTri(cell.vertices[i]);
+            VertAndTri(cell.vertices[next]);
             VertAndTri(center);
-
-
-            //Bottom 
-            VertAndTri(current, drop*2);
-            VertAndTri(edge, drop);
-            VertAndTri(current, drop);
-            
-            VertAndTri(current, drop*2);
-            VertAndTri(next, drop*2);
-            VertAndTri(edge, drop);
-
-            VertAndTri(next, drop*2);
-            VertAndTri(next, drop);
-            VertAndTri(edge, drop);
         }
     }
 
-    void VertAndTri(float3 vert, float drop = 0)
+    bool SegmentIsThin(int index)
     {
-        vert.y -= drop;
+        int next = NextVertIndex(index);
+        float3 vertA = cell.vertices[index];
+        float3 vertB = cell.vertices[next];
+        return vectorUtil.Angle(vertA-cell.cell.position, vertB-cell.cell.position) < minSegmentAngle;
+    }
 
-        /*if(scale > 0)
-        {
-            vert.x *= scale;
-            vert.z *= scale;
-        } */
+    int NextVertIndex(int index)
+    {
+        return index == cell.vertices.Length-1 ? 0 : index+1; 
+    }
 
+    void VertAndTri(float3 vert)
+    {
         vertices.Add(vert);
         triangles.Add(vertices.Length-1);
     }

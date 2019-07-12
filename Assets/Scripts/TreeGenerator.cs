@@ -10,8 +10,7 @@ public struct TreeGenerator
     public GameObject meshPrefab;
     public Material material;
 
-    WorleyNoise.CellData cell;
-    NativeArray<float3> cellVertices;
+    WorleyNoise.CellProfile cellProfile;
 
     NativeList<float3> vertices;
     NativeList<int> triangles;
@@ -24,19 +23,30 @@ public struct TreeGenerator
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
-        cell = worley.GetCellData(cellIndex);
-        cellVertices = worley.GetCellProfile(cellIndex).vertices;
-        WorldToLocal(cellVertices);
-        random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
-
-        //Draw other cell
-        //float height = random.NextFloat(12, 18);
-        //height = random.NextFloat(12, 18);
-        float height = 12;
-        Crown(height, worley.frequency*1.75f);
-
-        //DrawCell(cellVertices, cell.position);
         
+        cellProfile = worley.GetCellProfile(cellIndex);
+        random = new Unity.Mathematics.Random((uint)(cellProfile.cell.value * 1000));
+
+
+        Leaves leaves = new Leaves(vertices, triangles, random);
+        leaves.Draw(cellProfile);
+        
+        //DrawTrunk();
+
+        MakeMesh();
+
+        vertices.Dispose();
+        triangles.Dispose();
+    }
+
+    void WorldToLocal(NativeArray<float3> worldPositions)
+    {
+        for(int i = 0; i < worldPositions.Length; i++)
+            worldPositions[i] = worldPositions[i] - cellProfile.cell.position;
+    }
+
+    void DrawTrunk()
+    {
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);
         NativeArray<int> extruded = TrunkVertices(0.2f);
@@ -45,50 +55,15 @@ public struct TreeGenerator
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded = ExtrudeTrunk(extruded, random.NextFloat3(min, max) + new float3(0, 3, 0), 0.7f);
         extruded.Dispose(); 
-
-        MakeMesh();
-
-        vertices.Dispose();
-        triangles.Dispose();
-        cellVertices.Dispose();
     }
-
-    void WorldToLocal(NativeArray<float3> worldPositions)
-    {
-        for(int i = 0; i < worldPositions.Length; i++)
-            worldPositions[i] = worldPositions[i] - cell.position;
-    }
-
-    /*NativeArray<float3> RemoveThinSegments(NativeArray<float3> originalVertices, float3 centre, int minAngle)
-    {
-        NativeList<float3> trimmed = new NativeList<float3>( Allocator.Temp);
-
-        for(int i = 0; i < originalVertices.Length; i++)
-        {
-            int nextIndex = i == originalVertices.Length-1 ? 0 : i+1;
-            
-            float3 currentVertex = originalVertices[i] - centre;
-            float3 nextVertex = originalVertices[nextIndex] - centre;
-
-            if(vectorUtil.Angle(currentVertex, nextVertex) >= minAngle)
-                trimmed.Add(originalVertices[i]);
-        }
-
-        NativeArray<float3> trimmedArray = new NativeArray<float3>(trimmed.Length, Allocator.Temp);
-        trimmedArray.CopyFrom(trimmed);
-        trimmed.Dispose();
-
-        return trimmedArray;
-    } */
 
     NativeArray<int> TrunkVertices(float size)
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
-        //NativeArray<float3> verticesTrimmed = RemoveThinSegments(cellVertices, float3.zero, 20);
 
-        for(int i = 0; i < cellVertices.Length; i++)
+        for(int i = 0; i < cellProfile.vertices.Length; i++)
         {
-            vertices.Add(cellVertices[i] * size);
+            vertices.Add(cellProfile.vertices[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
@@ -130,154 +105,7 @@ public struct TreeGenerator
         return endIndices;
     }
 
-    void Crown(float height, float2 frequency)
-    {
-        WorleyNoise newWorley = worley;
-        newWorley.frequency = frequency;
-
-        NativeList<WorleyNoise.CellData> children = GetCellChildren(newWorley);
-        Leaves leaves = new Leaves(vertices, triangles, cell, random);
-        float3 midPoint = vectorUtil.MeanPoint(cellVertices);
-        leaves.Draw(cellVertices, midPoint, height);
-        /*for(int i = 0; i < children.Length; i++)
-        {
-            NativeArray<float3> edgeVertices = newWorley.GetCellVertices(children[i].index, UnityEngine.Color.green);
-            WorldToLocal(edgeVertices);
-
-            NativeArray<float3> edgeVerticesTrimmed = RemoveThinSegments(edgeVertices, children[i].position - cell.position, 20);
-            float3 meanPoint = vectorUtil.MeanPoint(edgeVerticesTrimmed);
-            leaves.Draw(edgeVerticesTrimmed, meanPoint, height);
-
-            edgeVertices.Dispose();
-            edgeVerticesTrimmed.Dispose();
-        }  */
-        children.Dispose();
-    }
-
-    /*void DrawLeavesInSegment(float height, float2 frequency)
-    {
-        WorleyNoise newWorley = worley;
-        newWorley.frequency = frequency;
-        newWorley.seed = random.NextInt();
-
-        NativeList<WorleyNoise.CellData> children = GetSegmentChildren(newWorley);
-        for(int i = 0; i < children.Length; i++)
-        {
-            WorleyNoise.CellData childCell = children[i];
-            DrawLeaves(newWorley.GetCellVertices(childCell.index, UnityEngine.Color.red), childCell.position, height);
-        }
-    } */
-
-    NativeList<WorleyNoise.CellData> GetSegmentChildren(WorleyNoise newWorley)
-    {
-        //TODO handle segment randomisation
-        float3 positionInSegment = new float3(1, 0, 1) + cell.position;
-
-        WorleyNoise.CellData startCell = newWorley.GetCellData(positionInSegment);
-
-        var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
-        var alreadyChecked = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
-        checkNext.Enqueue(startCell);
-        alreadyChecked.Add(startCell);
-
-        var children = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
-        while(checkNext.Count > 0)
-        {
-            WorleyNoise.CellData newCell = checkNext.Dequeue();
-
-            WorleyNoise.CellData dataFromParent = worley.GetCellData(newCell.position);
-            bool cellInParent = dataFromParent.index.Equals(cell.index);
-            float rotation = vectorUtil.RotationFromUp(Float3To2(newCell.position), Float3To2(cell.position));
-            //TODO Randomise segment, not just 90 from up
-            bool cellIsInSegment = rotation < 90;
-
-            if(!cellInParent || !cellIsInSegment)
-                continue;
-
-            children.Add(newCell);
-
-            AdjacentIntOffsetsClockwise adjacentIndices;
-            for(int i = 0; i < 8; i++)
-            {
-                WorleyNoise.CellData adjacentCell = newWorley.GetCellData(newCell.index + adjacentIndices[i]);
-                if(!alreadyChecked.Contains(adjacentCell))
-                {
-                    checkNext.Enqueue(adjacentCell);
-                    alreadyChecked.Add(adjacentCell);
-                }
-            }
-        }
-
-        checkNext.Dispose();
-        alreadyChecked.Dispose();
-
-        return children;
-    }
-
-    NativeList<WorleyNoise.CellData> GetCellChildren(WorleyNoise newWorley)
-    {
-        WorleyNoise.CellData startCell = newWorley.GetCellData(cell.position);
-
-        var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
-        var alreadyChecked = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
-        checkNext.Enqueue(startCell);
-        alreadyChecked.Add(startCell);
-
-        var children = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
-        while(checkNext.Count > 0)
-        {
-            WorleyNoise.CellData newCell = checkNext.Dequeue();
-
-            WorleyNoise.CellData dataFromParent = worley.GetCellData(newCell.position);
-            bool cellInParent = dataFromParent.index.Equals(cell.index);
-
-            if(!cellInParent)
-                continue;
-
-            children.Add(newCell);
-
-            AdjacentIntOffsetsClockwise adjacentIndices;
-            for(int i = 0; i < 8; i++)
-            {
-                WorleyNoise.CellData adjacentCell = newWorley.GetCellData(newCell.index + adjacentIndices[i]);
-                if(!alreadyChecked.Contains(adjacentCell))
-                {
-                    checkNext.Enqueue(adjacentCell);
-                    alreadyChecked.Add(adjacentCell);
-                }
-            }
-        }
-
-        checkNext.Dispose();
-        alreadyChecked.Dispose();
-
-        return children;
-    }
-
-    void DrawCell(NativeArray<float3> cellEdgeVertexPositions, float3 centerPosition)
-    {
-        float3 centerVertex = centerPosition - cell.position;
-        vertices.Add(centerVertex);
-
-        int cellCenter = vertices.Length-1;
-        int vertexIndex = vertices.Length;
-
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-            vertices.Add(cellEdgeVertexPositions[i] - cell.position);
-            
-        for(int i = 0; i < cellEdgeVertexPositions.Length; i++)
-        {
-            int currentEdge = vertexIndex + i;
-            int nextEdge = vertexIndex + (i == cellEdgeVertexPositions.Length-1 ? 0 : i+1);
-
-            triangles.Add(currentEdge);
-            triangles.Add(nextEdge);
-            triangles.Add(cellCenter);            
-        }
-
-        cellEdgeVertexPositions.Dispose();
-    }  
-
+    //TODO world to local vertices and set cell position
     void MakeMesh()
     {
         List<Vector3> vertexList = new List<Vector3>();
@@ -300,11 +128,6 @@ public struct TreeGenerator
         meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
         //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
-        meshObject.transform.Translate(cell.position);
-    }
-
-    float2 Float3To2(float3 f)
-    {
-        return new float2(f.x, f.z);
+        //meshObject.transform.Translate(cellProfile.cell.position);
     }
 }
