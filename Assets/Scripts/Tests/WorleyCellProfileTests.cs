@@ -51,5 +51,14 @@ namespace Tests
             
             Assert.IsFalse(foundMatch);
         }
+
+        [Test]
+        public void AdjacentCellsIsSameLengthAsVertices()
+        {
+            var cell = GetRandomCell();
+            bool same = cell.vertices.Length == cell.adjacentCells.Length;
+
+            Assert.IsTrue(same);
+        }
     }
 }
