@@ -271,15 +271,11 @@ public struct BowyerWatson
 
         for(int i = 0; i < edges.Length; i++)
         {
-            vertices[0] = edges[i].a;
-            vertices[1] = edges[i].b;
-            vertices[2] = point;
-
             Triangle triangle = new Triangle();
-            triangle.a = vertices[0];
-            triangle.b = vertices[1];
-            triangle.c = vertices[2];
-            triangle.circumcircle = GetCircumcircle(vertices[0].pos, vertices[1].pos, vertices[2].pos);
+            triangle.a = edges[i].a;
+            triangle.b = edges[i].b;
+            triangle.c = point;
+            triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
             triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
 
             triangles.Add(triangle);
@@ -377,8 +373,7 @@ public struct BowyerWatson
             if(triangleInCell)
             {
                 edgeVertices.Add(triangle.circumcircle.center);
-                adjacentCells.Add(adjacentCellPair);
-
+                adjacentCells.Add(SortCellPairClockwise(adjacentCellPair));
             }
         }
 
@@ -389,6 +384,22 @@ public struct BowyerWatson
         adjacentCellsArray.CopyFrom(adjacentCells);
 
         return vertexArray;
+    }
+
+    WorleyNoise.CellDataX2 SortCellPairClockwise(WorleyNoise.CellDataX2 original)
+    {
+        bool wrongWay = vectorUtil.RotationFromUp(original.c0.position, cellPosition) >
+                        vectorUtil.RotationFromUp(original.c1.position, cellPosition);
+
+        if(wrongWay)
+        {
+            var result = new WorleyNoise.CellDataX2();
+            result.c0 = original.c1;
+            result.c1 = original.c0;
+            return result;
+        }
+        else
+            return original;
     }
 
 
