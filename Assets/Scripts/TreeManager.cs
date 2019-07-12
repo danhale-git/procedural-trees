@@ -9,7 +9,7 @@ public class TreeManager : MonoBehaviour
     Unity.Mathematics.Random random;
     WorleyNoise worley;
 
-    BowyerWatson bowyerWatson;
+    WorleyCellProfile bowyerWatson;
 
     static GameObject textPrefab;
     public static void CreateText(float3 position, string text)
@@ -46,7 +46,7 @@ public class TreeManager : MonoBehaviour
             material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")
         };
 
-        bool one = true;
+        bool one = false;
         int range = 1;
 
         if(!one)

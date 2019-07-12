@@ -15,7 +15,7 @@ public struct WorleyNoise
 	public DistanceFunction distanceFunction;
 	public CellularReturnType cellularReturnType;
 
-	BowyerWatson bowyerWatson;
+	WorleyCellProfile bowyerWatson;
 	
     CELL_2D cell_2D;
     const int X_PRIME = 1619;

@@ -1,7 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct BowyerWatson
+public struct WorleyCellProfile
 {
     float3 cellPosition;
 
@@ -353,7 +353,7 @@ public struct BowyerWatson
 
         for(int t = 0; t < triangles.Length; t++)
         {
-            BowyerWatson.Triangle triangle = triangles[t];
+            WorleyCellProfile.Triangle triangle = triangles[t];
             bool triangleInCell = false;
 
             int floatIndex = 0;
