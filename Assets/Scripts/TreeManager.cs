@@ -30,6 +30,7 @@ public class TreeManager : MonoBehaviour
         {
             frequency = 0.075f,
             seed = random.NextInt(),
+            //seed = -625141570,
             perterbAmp = 0,
             cellularJitter = 0.3f,
             distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
@@ -46,7 +47,7 @@ public class TreeManager : MonoBehaviour
         };
 
         bool one = true;
-        int range = 2;
+        int range = 1;
 
         if(!one)
             for(int x = -range; x <= range; x++)

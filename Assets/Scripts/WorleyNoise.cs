@@ -115,10 +115,10 @@ public struct WorleyNoise
 
 		for(int i = 0; i < cellProfile.vertices.Length; i++)
 		{
-			UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c0.position, UnityEngine.Color.green, 100);
-			UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c1.position, UnityEngine.Color.green, 100);
-			UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.cell.position, UnityEngine.Color.blue, 100);
-
+			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c0.position, UnityEngine.Color.green, 100);
+			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c1.position, UnityEngine.Color.green, 100);
+			//UnityEngine.Debug.DrawLine(cellProfile.adjacentCells[i].c0.position, cellProfile.adjacentCells[i].c1.position, UnityEngine.Color.green, 100);
+			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.cell.position, UnityEngine.Color.blue, 100);
 		}
 
 

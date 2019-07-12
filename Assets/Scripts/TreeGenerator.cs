@@ -34,6 +34,8 @@ public struct TreeGenerator
         //height = random.NextFloat(12, 18);
         float height = 12;
         Crown(height, worley.frequency*1.75f);
+
+        //DrawCell(cellVertices, cell.position);
         
         float3 min = new float3(-1, 0, -1);
         float3 max = new float3(1, 0, 1);

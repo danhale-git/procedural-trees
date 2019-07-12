@@ -75,6 +75,7 @@ public struct VectorUtil
         return sum /= points.Length;
     }
 
+    //TODO: correct operator in return line
     public float3 MeanPoint(NativeArray<float3> points)
     {
         float3 sum = float3.zero;
