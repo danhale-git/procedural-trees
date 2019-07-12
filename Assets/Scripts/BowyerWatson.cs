@@ -117,6 +117,13 @@ public struct BowyerWatson
         cellProfile.vertices = GatherCellEdgeVertices(out cellProfile.adjacentCells);
         cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
 
+        for(int i = 0; i < triangles.Length; i++)
+        {
+            //DrawTriangle(triangles[i], new UnityEngine.Color(0, 1, 0, 0.5f));
+        }
+        DrawTriangle(superTriangle, new UnityEngine.Color(1, 0, 0, 0.5f));
+
+
         points.Dispose();
         triangles.Dispose();
 
@@ -273,11 +280,13 @@ public struct BowyerWatson
             vertices[1] = edges[i].b;
             vertices[2] = point;
 
-            float3 triangleCenter = MeanPoint(vertices);
+            float3 triangleCenter = (edges[i].a.pos + edges[i].b.pos + point.pos) / 3;
+//            float3 triangleCenter = MeanPoint(vertices);
+            //float3 triangleCenter = 0;
             for(int v = 0; v < 3; v++)
             {
                 Vertex vertex = vertices[v];
-                //vertex.degreesFromUp = vectorUtil.RotationFromUp(vertices[v].pos, triangleCenter);
+                vertex.degreesFromUp = vectorUtil.RotationFromUp(vertex.pos, triangleCenter);
                 vertices[v] = vertex;
             }
             //vertices.Sort();
@@ -381,10 +390,23 @@ public struct BowyerWatson
                     floatIndex++;
                 }
 
+            if(adjacentCellPair.c0.value == 0 || adjacentCellPair.c1.value == 0)
+                continue;
+
             if(triangleInCell)
             {
                 edgeVertices.Add(triangle.circumcircle.center);
                 adjacentCells.Add(adjacentCellPair);
+
+                if(adjacentCellPair.c0.value == 0 || adjacentCellPair.c1.value == 0)//DEBUG
+                {
+                    UnityEngine.Debug.Log(adjacentCellPair.c0.index+" "+adjacentCellPair.c0.value+" "+adjacentCellPair.c0.position);
+                    UnityEngine.Debug.Log(adjacentCellPair.c1.index+" "+adjacentCellPair.c1.value+" "+adjacentCellPair.c1.position);
+                    
+                    
+                    throw new System.Exception("0 value cell data in BowyerWatson results");
+
+                }//DEBUG
             }
         }
 
@@ -395,5 +417,13 @@ public struct BowyerWatson
         adjacentCellsArray.CopyFrom(adjacentCells);
 
         return vertexArray;
+    }
+
+
+    void DrawTriangle(Triangle triangle, UnityEngine.Color color)
+    {
+        UnityEngine.Debug.DrawLine(triangle.a.pos, triangle.b.pos, color, 100);
+        UnityEngine.Debug.DrawLine(triangle.a.pos, triangle.c.pos, color, 100);
+        UnityEngine.Debug.DrawLine(triangle.c.pos, triangle.b.pos, color, 100);
     }
 }
