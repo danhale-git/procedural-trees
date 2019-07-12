@@ -15,8 +15,7 @@ public struct WorleyNoise
 	public DistanceFunction distanceFunction;
 	public CellularReturnType cellularReturnType;
 
-	BowyerWatson bowyerWatson;
-    DirichletTessellation tessellation;
+	WorleyCellProfile bowyerWatson;
 	
     CELL_2D cell_2D;
     const int X_PRIME = 1619;
@@ -41,6 +40,43 @@ public struct WorleyNoise
 		public float3 position;
 	}
 
+	public struct CellDataX2
+	{
+		public CellData c0;
+		public CellData c1;
+
+		public CellData this[int i]
+		{
+			get
+            {
+                switch(i)
+                {
+                    case 0: return c0;
+                    case 1: return c1;
+                    default: throw new System.IndexOutOfRangeException("Index "+i+" out of range 2");
+                }
+            }
+
+			set
+            {
+                switch(i)
+                {
+                    case 0: c0 = value; break;
+                    case 1: c1 = value; break;
+                    default: throw new System.IndexOutOfRangeException("Index "+i+" out of range 2");
+                }
+            }
+		}
+	}
+
+	public struct CellProfile
+	{
+		public CellData cell;
+		public float3 meanPoint;
+		public NativeArray<float3> vertices;
+		public NativeArray<CellDataX2> adjacentCells;
+	}
+
 	public CellData GetCellData(int2 cellIndex)
     {
         float2 vec = cell_2D[Hash2D(seed, cellIndex.x, cellIndex.y) & 255];
@@ -56,22 +92,10 @@ public struct WorleyNoise
 		
 		return cell;
     }
-	
-	public struct CellProfile
-	{
-		public CellData cell;
-		public float3 meanPoint;
-		public NativeArray<float3> vertices;
-		//	^Parallel adjacent indices
 
-		//	MeanPoint
-		//	Adjacent CellData set
-	}
-
-	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
+	public CellProfile GetCellProfile(int2 cellIndex)
     {
-        var points = new NativeList<float2>(Allocator.Temp);
-		//List of adjacent CellData
+        var points = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
 
 		WorleyNoise.CellData cell = new WorleyNoise.CellData();
 
@@ -80,7 +104,7 @@ public struct WorleyNoise
             {
                 int2 index = new int2(x, z) + cellIndex;
                 WorleyNoise.CellData newCell = GetCellData(index);
-                points.Add(new float2(newCell.position.x, newCell.position.z));
+                points.Add(newCell);
 
 				if(index.Equals(cellIndex))
                     cell = newCell;
@@ -88,7 +112,7 @@ public struct WorleyNoise
 
         CellProfile cellProfile = bowyerWatson.GetCellProfile(points, cell);
 
-        return cellProfile.vertices;
+        return cellProfile;
     }
 
 	public CellData GetCellData(float x, float y)

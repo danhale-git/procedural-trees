@@ -7,7 +7,7 @@ using Unity.Mathematics;
 
 namespace Tests
 {
-    public class TreeWorleyNoiseTests
+    public class WorleyNoiseTests
     {
         Unity.Mathematics.Random Random()
         {
