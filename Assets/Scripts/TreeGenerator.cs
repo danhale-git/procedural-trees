@@ -25,7 +25,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         cell = worley.GetCellData(cellIndex);
-        cellVertices = worley.GetCellVertices(cellIndex, UnityEngine.Color.blue);
+        cellVertices = worley.GetCellProfile(cellIndex).vertices;
         WorldToLocal(cellVertices);
         random = new Unity.Mathematics.Random((uint)(cell.value * 1000));
 

@@ -93,10 +93,9 @@ public struct WorleyNoise
 		return cell;
     }
 
-	public NativeArray<float3> GetCellVertices(int2 cellIndex, UnityEngine.Color color)
+	public CellProfile GetCellProfile(int2 cellIndex)
     {
         var points = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
-		//List of adjacent CellData
 
 		WorleyNoise.CellData cell = new WorleyNoise.CellData();
 
@@ -113,16 +112,7 @@ public struct WorleyNoise
 
         CellProfile cellProfile = bowyerWatson.GetCellProfile(points, cell);
 
-		for(int i = 0; i < cellProfile.vertices.Length; i++)
-		{
-			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c0.position, UnityEngine.Color.green, 100);
-			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.adjacentCells[i].c1.position, UnityEngine.Color.green, 100);
-			//UnityEngine.Debug.DrawLine(cellProfile.adjacentCells[i].c0.position, cellProfile.adjacentCells[i].c1.position, UnityEngine.Color.green, 100);
-			//UnityEngine.Debug.DrawLine(cellProfile.vertices[i], cellProfile.cell.position, UnityEngine.Color.blue, 100);
-		}
-
-
-        return cellProfile.vertices;
+        return cellProfile;
     }
 
 	public CellData GetCellData(float x, float y)
