@@ -297,8 +297,8 @@ public struct TreeGenerator
         meshFilter.mesh = mesh;
 
         float3 randomColor = random.NextFloat3();
-        //meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
-        meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
+        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
+        //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
         meshObject.transform.Translate(cell.position);
     }
