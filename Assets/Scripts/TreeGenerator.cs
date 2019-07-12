@@ -25,7 +25,7 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         
         cellProfile = worley.GetCellProfile(cellIndex);
-        random = new Unity.Mathematics.Random((uint)(cellProfile.cell.value * 1000));
+        random = new Unity.Mathematics.Random((uint)(cellProfile.data.value * 1000));
 
 
         Leaves leaves = new Leaves(vertices, triangles, random);
@@ -42,7 +42,7 @@ public struct TreeGenerator
     void WorldToLocal(NativeArray<float3> worldPositions)
     {
         for(int i = 0; i < worldPositions.Length; i++)
-            worldPositions[i] = worldPositions[i] - cellProfile.cell.position;
+            worldPositions[i] = worldPositions[i] - cellProfile.data.position;
     }
 
     void DrawTrunk()

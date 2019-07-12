@@ -113,7 +113,7 @@ public struct WorleyCellProfile
         SortTrianglesClockwise();
 
         var cellProfile = new WorleyNoise.CellProfile();
-        cellProfile.cell = cell;
+        cellProfile.data = cell;
         cellProfile.vertices = GatherCellEdgeVertices(out cellProfile.adjacentCells);
         cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
 

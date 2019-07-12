@@ -71,7 +71,7 @@ public struct WorleyNoise
 
 	public struct CellProfile
 	{
-		public CellData cell;
+		public CellData data;
 		public float3 meanPoint;
 		public NativeArray<float3> vertices;
 		public NativeArray<CellDataX2> adjacentCells;

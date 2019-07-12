@@ -57,7 +57,7 @@ public struct Leaves
         int next = NextVertIndex(index);
         float3 vertA = cell.vertices[index];
         float3 vertB = cell.vertices[next];
-        return vectorUtil.Angle(vertA-cell.cell.position, vertB-cell.cell.position) < minSegmentAngle;
+        return vectorUtil.Angle(vertA-cell.data.position, vertB-cell.data.position) < minSegmentAngle;
     }
 
     int NextVertIndex(int index)
