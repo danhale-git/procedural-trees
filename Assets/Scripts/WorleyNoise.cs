@@ -95,24 +95,27 @@ public struct WorleyNoise
 	public CellProfile GetCellProfile(int2 cellIndex)
     {
         var nineCells = new NativeArray<WorleyNoise.CellData>(9, Allocator.Temp);
-		var cell = new WorleyNoise.CellData();
+		CellData cell = GetCellData(cellIndex);
 
 		int arrayIndex = 0;
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
                 int2 otherCellIndex = new int2(x, z) + cellIndex;
-                WorleyNoise.CellData newCell = GetCellData(otherCellIndex);
+                CellData newCell = GetCellData(otherCellIndex);
 
-                nineCells[arrayIndex] = newCell;
+				if(x == 0 && z == 0)
+					nineCells[arrayIndex] = cell;
+				else
+                	nineCells[arrayIndex] = newCell;
+
 				arrayIndex++;
-
-				if(otherCellIndex.Equals(cellIndex))
-                    cell = newCell;
             }
 
         CellProfile cellProfile = bowyerWatson.GetCellProfile(nineCells, cell);
 
+		nineCells.Dispose();
+		
         return cellProfile;
     }
 
