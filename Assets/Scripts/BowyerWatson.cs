@@ -1,7 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public class BowyerWatson
+public struct BowyerWatson
 {
     public Triangle superTriangle;
 
