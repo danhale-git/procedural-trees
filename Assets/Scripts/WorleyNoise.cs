@@ -102,15 +102,19 @@ public struct WorleyNoise
     }
 
 	public CellProfile GetCellProfile(int2 cellIndex)
+	{
+		return GetCellProfile(GetCellData(cellIndex));
+	}
+
+	public CellProfile GetCellProfile(CellData cell)
     {
         var nineCells = new NativeArray<WorleyNoise.CellData>(9, Allocator.Temp);
-		CellData cell = GetCellData(cellIndex);
 
 		int arrayIndex = 0;
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
-                int2 otherCellIndex = new int2(x, z) + cellIndex;
+                int2 otherCellIndex = new int2(x, z) + cell.index;
                 CellData newCell = GetCellData(otherCellIndex);
 
 				if(x == 0 && z == 0)
