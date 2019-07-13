@@ -87,13 +87,31 @@ public struct BowyerWatson
         }
 	}
 
-    public NativeList<Triangle> TriangulateCells(NativeArray<WorleyNoise.CellData> nineCells)
+    public NativeList<Triangle> Triangulate(NativeArray<float3> pointsToTriangulate)
     {
-        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
+        this.points = new NativeList<Vertex>(Allocator.Temp);
+        for(int i = 0; i < pointsToTriangulate.Length; i++)
+            points.Add(new Vertex(pointsToTriangulate[i]));
+
+        Triangulate();
+
+        return triangles;
+    }
+
+    public NativeList<Triangle> Triangulate(NativeArray<WorleyNoise.CellData> nineCells)
+    {
         this.points = new NativeList<Vertex>(Allocator.Temp);
         for(int i = 0; i < nineCells.Length; i++)
             points.Add(new Vertex(nineCells[i]));
 
+        Triangulate();
+
+        return triangles;
+    }
+
+    void Triangulate()
+    {
+        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         this.superTriangle = SuperTriangle();
         triangles.Add(superTriangle);
 
@@ -110,8 +128,6 @@ public struct BowyerWatson
         }
 
         points.Dispose();
-        
-        return triangles;
     }
 
     Triangle SuperTriangle()

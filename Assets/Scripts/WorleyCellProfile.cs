@@ -17,7 +17,7 @@ public struct WorleyCellProfile
         this.cellPosition = cell.position;
 
         this.triangles = new NativeList<BowyerWatson.Triangle>(Allocator.Temp);
-        var allTriangles = bowyerWatson.TriangulateCells(nineCells);
+        var allTriangles = bowyerWatson.Triangulate(nineCells);
         AddEligibleTriangles(allTriangles);
 
         SortTrianglesClockwise();
