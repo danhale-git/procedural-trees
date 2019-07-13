@@ -30,7 +30,7 @@ public class TreeManager : MonoBehaviour
         {
             frequency = 0.075f,
             seed = random.NextInt(),
-            //seed = -625141570,
+            //seed = -1794538785,
             perterbAmp = 0,
             cellularJitter = 0.3f,
             distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
@@ -47,7 +47,7 @@ public class TreeManager : MonoBehaviour
         };
 
         bool one = false;
-        int range = 1;
+        int range = 2;
 
         if(!one)
             for(int x = -range; x <= range; x++)
@@ -57,9 +57,9 @@ public class TreeManager : MonoBehaviour
                     generator.Generate(index);
                 }
         else
-            generator.Generate(int2.zero);
+            generator.Generate(new int2(1, -1));
 
-        //DebugWorley(18);
+        //DebugWorley(30);
     }
 
     void Update()
@@ -130,6 +130,14 @@ public class TreeManager : MonoBehaviour
         cube.transform.Rotate(new Vector3(90, 0, 0));
         cube.GetComponent<MeshRenderer>().material.color = color;
         return cube;
+    }
+    public static GameObject CreateTextMesh(float3 position, string text, UnityEngine.Color color)
+    {
+        GameObject gameObject = GameObject.Instantiate(textPrefab, position, Quaternion.Euler(90,0,0));
+        TextMesh textMesh = gameObject.GetComponent<TextMesh>();
+        textMesh.text = text;
+        textMesh.color = color;
+        return gameObject;
     }
 
     /*void GenerateTree(int2 index)
