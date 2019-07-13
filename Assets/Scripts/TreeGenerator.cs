@@ -17,6 +17,8 @@ public struct TreeGenerator
 
     Unity.Mathematics.Random random;
     VectorUtil vectorUtil;
+
+    Color randomColor;//DEBUG
     
     public void Generate(int2 cellIndex)
     {
@@ -27,9 +29,6 @@ public struct TreeGenerator
         parentCellProfile = worley.GetCellProfile(cellIndex);
         random = new Unity.Mathematics.Random((uint)(parentCellProfile.data.value * 1000));
 
-        //Leaves leaves = new Leaves(vertices, triangles);
-        //leaves.Draw(parentCellProfile);
-        
         DrawChildCells(worley.frequency*2);
 
         //DrawTrunk();
@@ -40,6 +39,13 @@ public struct TreeGenerator
 
         vertices.Dispose();
         triangles.Dispose();
+
+        //DEBUG
+        random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
+        float3 col = random.NextFloat3(0, 1);
+        randomColor = new Color(col.x, col.y, col.z);
+        //TreeManager.CreateTextMesh(parentCellProfile.data.position + new float3(0,12,0), parentCellProfile.data.index.ToString(), randomColor*0.5f);
+        //DEBUG
     }
 
     void DrawChildCells(float2 frequency)
@@ -49,7 +55,8 @@ public struct TreeGenerator
         WorleyNoise childWorley = worley;
         childWorley.frequency = frequency;
 
-        WorleyNoise.CellData startChild = childWorley.GetCellData(parentCellProfile.data.position);
+        float3 meanPointWorld = parentCellProfile.data.position + vectorUtil.MeanPoint(parentCellProfile.vertices);
+        WorleyNoise.CellData startChild = childWorley.GetCellData(meanPointWorld);
 
         var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
         var alreadyChecked = new NativeList<int2>(Allocator.Temp);
@@ -57,13 +64,8 @@ public struct TreeGenerator
         checkNext.Enqueue(startChild);
         alreadyChecked.Add(startChild.index);
 
-        int safety = 0;
-
         while(checkNext.Count > 0)
         {
-            if(safety > 100) break;
-            safety++;
-
             WorleyNoise.CellData childData = checkNext.Dequeue();
 
             WorleyNoise.CellData dataFromParent = worley.GetCellData(childData.position);
@@ -74,7 +76,7 @@ public struct TreeGenerator
 
             WorleyNoise.CellProfile childProfile = childWorley.GetCellProfile(childData);
             float3 positionInParent = childProfile.data.position - parentCellProfile.data.position;
-            positionInParent.y += 10;//DEBUG
+
             leaves.Draw(childProfile, positionInParent);
 
             for(int i = 0; i < childProfile.vertices.Length; i++)
@@ -91,11 +93,6 @@ public struct TreeGenerator
 
         checkNext.Dispose();
         alreadyChecked.Dispose();
-    }
-
-    void DrawLeaves()
-    {
-        
     }
 
     void DrawTrunk()
@@ -158,7 +155,6 @@ public struct TreeGenerator
         return endIndices;
     }
 
-    //TODO world to local vertices and set cell position
     void MakeMesh()
     {
         List<Vector3> vertexList = new List<Vector3>();
@@ -177,10 +173,7 @@ public struct TreeGenerator
         meshRenderer.material = this.material;
         meshFilter.mesh = mesh;
 
-        random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
-        float3 randomColor = random.NextFloat3(0, 1);
-        meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
-        //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
+        meshRenderer.material.color = randomColor;
 
         meshObject.transform.Translate(parentCellProfile.data.position);
     }
