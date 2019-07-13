@@ -29,22 +29,15 @@ public struct Leaves
 
         float3 center = vectorUtil.MeanPoint(cell.vertices);
 
-        var newVertices = new NativeList<float3>(Allocator.Temp);
-
         for(int i = 0; i < cell.vertices.Length; i++)
         {
-            int next = NextVertIndex(i);
-
             float3 currentEdge = cell.vertices[i];
-            float3 nextEdge = cell.vertices[next];
+            float3 nextEdge = cell.vertices[NextVertIndex(i)];
 
             float3 currentMid = vectorUtil.MidPoint(center, currentEdge, 0.6f);
             float3 nextMid = vectorUtil.MidPoint(center, nextEdge, 0.6f);
 
             float3 edgeMid = vectorUtil.MidPoint(currentEdge, nextEdge);
-
-            newVertices.Add(currentMid);
-            newVertices.Add(nextMid);
 
             if(SegmentIsThin(currentEdge, nextEdge))
             {
@@ -79,7 +72,7 @@ public struct Leaves
                 VertAndTri(center);
             }
         }
-    }  
+    } 
 
     bool SegmentIsThin(float3 a, float3 b)
     {
@@ -88,13 +81,13 @@ public struct Leaves
 
     int NextVertIndex(int index)
     {
-        return index == cell.vertices.Length-1 ? 0 : index+1; 
+        return index >= cell.vertices.Length-1 ? index - (cell.vertices.Length-1) : index+1; 
     }
 
     void VertAndTri(float3 vert)
     {
         float jitter = simplex.GetSimplex(vert.x + cell.data.position.x, vert.z + cell.data.position.z);
-        vert.y += jitter;
+        //vert += jitter;
 
         vertices.Add(vert + offset);
         triangles.Add(vertices.Length-1);
