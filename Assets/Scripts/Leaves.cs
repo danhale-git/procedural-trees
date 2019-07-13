@@ -22,23 +22,11 @@ public struct Leaves
 
     public void Draw(WorleyNoise.CellProfile cell)
     {
-        BowyerWatson bowyerWatson = new BowyerWatson();
-
-        NativeList<BowyerWatson.Triangle> trianglesList = bowyerWatson.Triangulate(cell.vertices);
-
-        for(int i = 0; i < trianglesList.Length; i++)
-        {
-            VertAndTri(trianglesList[i].a.pos);
-            VertAndTri(trianglesList[i].b.pos);
-            VertAndTri(trianglesList[i].c.pos);
-        }
-    } 
-
-    /*public void Draw(WorleyNoise.CellProfile cell)
-    {
         float3 center = vectorUtil.MeanPoint(cell.vertices);
 
         this.cell = cell;
+
+        var newVertices = new NativeList<float3>(Allocator.Temp);
 
         for(int i = 0; i < cell.vertices.Length; i++)
         {
@@ -48,12 +36,14 @@ public struct Leaves
             float3 nextEdge = cell.vertices[next];
 
             float3 currentMid = vectorUtil.MidPoint(center, currentEdge, 0.6f);
-
             float3 nextMid = vectorUtil.MidPoint(center, nextEdge, 0.6f);
 
             float3 edgeMid = vectorUtil.MidPoint(currentEdge, nextEdge);
 
-            if(SegmentIsThin(i))
+            newVertices.Add(currentMid);
+            newVertices.Add(nextMid);
+
+            if(SegmentIsThin(currentEdge, nextEdge))
             {
                 VertAndTri(nextMid);
                 VertAndTri(currentMid);
@@ -86,14 +76,11 @@ public struct Leaves
                 VertAndTri(center);
             }
         }
-    }  */
+    }  
 
-    bool SegmentIsThin(int index)
+    bool SegmentIsThin(float3 a, float3 b)
     {
-        int next = NextVertIndex(index);
-        float3 vertA = cell.vertices[index];
-        float3 vertB = cell.vertices[next];
-        return vectorUtil.Angle(vertA-cell.data.position, vertB-cell.data.position) < minSegmentAngle;
+        return vectorUtil.Angle(a, b) < minSegmentAngle;
     }
 
     int NextVertIndex(int index)
