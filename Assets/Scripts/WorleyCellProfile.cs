@@ -4,9 +4,9 @@ using Unity.Collections;
 public struct WorleyCellProfile
 {
     float3 cellPosition;
-    NativeList<BowyerWatson.Triangle> triangles;
+    NativeList<BowyerWatson<WorleyNoise.CellData>.Triangle> triangles;
 
-    BowyerWatson bowyerWatson;
+    BowyerWatson<WorleyNoise.CellData> bowyerWatson;
     VectorUtil vectorUtil;
 
     NativeList<float3> cellVertices;
@@ -41,12 +41,12 @@ public struct WorleyCellProfile
     {
         for(int i = 0; i < triangles.Length; i++)
         {
-            BowyerWatson.Triangle triangle = triangles[i];
+            var triangle = triangles[i];
             triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
             triangles[i] = triangle;
         }
 
-        var sortedTriangles = new NativeArray<BowyerWatson.Triangle>(triangles.Length, Allocator.Temp);
+        var sortedTriangles = new NativeArray<BowyerWatson<WorleyNoise.CellData>.Triangle>(triangles.Length, Allocator.Temp);
         sortedTriangles.CopyFrom(triangles);
         sortedTriangles.Sort();
         sortedTriangles.CopyTo(triangles);
@@ -57,12 +57,12 @@ public struct WorleyCellProfile
     {
         for(int t = 0; t < triangles.Length; t++)
         {
-            BowyerWatson.Triangle triangle = triangles[t];
+            var triangle = triangles[t];
             AddTriangleIfInCell(triangle);
         }
     }
 
-    void AddTriangleIfInCell(BowyerWatson.Triangle triangle)
+    void AddTriangleIfInCell(BowyerWatson<WorleyNoise.CellData>.Triangle triangle)
     {
         bool triangleInCell = false;
 
@@ -79,7 +79,7 @@ public struct WorleyCellProfile
                 if(floatIndex > 1)
                     continue;
 
-                adjacentCellPair[floatIndex] = triangle[i].cell;
+                adjacentCellPair[floatIndex] = triangle[i].pointObject;
                 floatIndex++;
             }
 

@@ -26,13 +26,22 @@ public struct WorleyNoise
 		seed = math.abs(newSeed);
 	}
 
-	public struct CellData : IComparable<CellData>, IEquatable<CellData>
+	public struct CellData : IComparable<CellData>, IEquatable<CellData>, IBowyerWatsonPoint
 	{
 		public int CompareTo(CellData other)
-		{ return value.CompareTo(other.value); }
+		{
+			return value.CompareTo(other.value);
+		}
 
 		public bool Equals(CellData other)
-		{ return this.index.Equals(other.index); }
+		{
+			return this.index.Equals(other.index);
+		}
+
+		public float3 GetBowyerWatsonPoint()
+		{
+			return position;
+		}
 
 		public float value;
 		public int2 index;

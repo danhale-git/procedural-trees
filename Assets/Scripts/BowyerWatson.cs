@@ -1,7 +1,12 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct BowyerWatson
+public interface IBowyerWatsonPoint
+{
+    float3 GetBowyerWatsonPoint();
+}
+
+public struct BowyerWatson<T> where T : struct, IBowyerWatsonPoint
 {
     public Triangle superTriangle;
 
@@ -14,17 +19,17 @@ public struct BowyerWatson
     public struct Vertex
     {
         public readonly float3 pos;
-        public readonly WorleyNoise.CellData cell;
+        public readonly T pointObject;
         
-        public Vertex(WorleyNoise.CellData cell)
+        public Vertex(T pointObject)
         {
-            this.cell = cell;
-            this.pos = cell.position;
+            this.pointObject = pointObject;
+            this.pos = pointObject.GetBowyerWatsonPoint();
         }
 
         public Vertex(float3 pos)
         {
-            this.cell = new WorleyNoise.CellData();
+            this.pointObject = new T();
             this.pos = pos;
         }
     }
@@ -98,11 +103,11 @@ public struct BowyerWatson
         return triangles;
     }
 
-    public NativeList<Triangle> Triangulate(NativeArray<WorleyNoise.CellData> nineCells)
+    public NativeList<Triangle> Triangulate(NativeArray<T> pointObjects)
     {
         this.points = new NativeList<Vertex>(Allocator.Temp);
-        for(int i = 0; i < nineCells.Length; i++)
-            points.Add(new Vertex(nineCells[i]));
+        for(int i = 0; i < pointObjects.Length; i++)
+            points.Add(new Vertex(pointObjects[i]));
 
         Triangulate();
 
@@ -301,7 +306,7 @@ public struct BowyerWatson
 
         for(int i = 0; i < trianglesCopy.Length; i++)
         {
-            BowyerWatson.Triangle triangle = trianglesCopy[i];
+            Triangle triangle = trianglesCopy[i];
             if(!SharesVertexWithSupertriangle(triangle))
                 triangles.Add(triangle);
         }
@@ -309,7 +314,7 @@ public struct BowyerWatson
         trianglesCopy.Dispose();
     }
 
-    bool SharesVertexWithSupertriangle(BowyerWatson.Triangle triangle)
+    bool SharesVertexWithSupertriangle(Triangle triangle)
     {
         for(int t = 0; t < 3; t++)
             for(int s = 0; s < 3; s++)
