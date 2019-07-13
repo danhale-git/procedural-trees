@@ -26,7 +26,6 @@ public struct WorleyNoise
 		seed = math.abs(newSeed);
 	}
 
-	//TODO get cell position as 2d or 3d
 	public struct CellData : IComparable<CellData>, IEquatable<CellData>
 	{
 		public int CompareTo(CellData other)
@@ -95,22 +94,24 @@ public struct WorleyNoise
 
 	public CellProfile GetCellProfile(int2 cellIndex)
     {
-        var points = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+        var nineCells = new NativeArray<WorleyNoise.CellData>(9, Allocator.Temp);
+		var cell = new WorleyNoise.CellData();
 
-		WorleyNoise.CellData cell = new WorleyNoise.CellData();
-
+		int arrayIndex = 0;
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
-                int2 index = new int2(x, z) + cellIndex;
-                WorleyNoise.CellData newCell = GetCellData(index);
-                points.Add(newCell);
+                int2 otherCellIndex = new int2(x, z) + cellIndex;
+                WorleyNoise.CellData newCell = GetCellData(otherCellIndex);
 
-				if(index.Equals(cellIndex))
+                nineCells[arrayIndex] = newCell;
+				arrayIndex++;
+
+				if(otherCellIndex.Equals(cellIndex))
                     cell = newCell;
             }
 
-        CellProfile cellProfile = bowyerWatson.GetCellProfile(points, cell);
+        CellProfile cellProfile = bowyerWatson.GetCellProfile(nineCells, cell);
 
         return cellProfile;
     }
