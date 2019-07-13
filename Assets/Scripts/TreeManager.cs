@@ -29,8 +29,8 @@ public class TreeManager : MonoBehaviour
         worley = new WorleyNoise()
         {
             frequency = 0.075f,
-            seed = random.NextInt(),
-            //seed = -1794538785,
+            //seed = random.NextInt(),
+            seed = 103658054,
             perterbAmp = 0,
             cellularJitter = 0.3f,
             distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
@@ -47,17 +47,17 @@ public class TreeManager : MonoBehaviour
         };
 
         bool one = false;
-        int range = 2;
+        int range = 1;
 
         if(!one)
             for(int x = -range; x <= range; x++)
                 for(int z = -range; z <= range; z++)
                 {
-                    int2 index = new int2(x, z);
+                    int2 index = new int2(x, z) * 2;
                     generator.Generate(index);
                 }
         else
-            generator.Generate(new int2(1, -1));
+            generator.Generate(new int2(0));
 
         //DebugWorley(30);
     }
