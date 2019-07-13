@@ -9,15 +9,17 @@ public struct Leaves
     WorleyNoise.CellProfile cell;
 
     VectorUtil vectorUtil;
+    SimplexNoise simplex;
 
     const int minSegmentAngle = 10;
 
-    public Leaves(NativeList<float3> vertices, NativeList<int> triangles)
+    public Leaves(NativeList<float3> vertices, NativeList<int> triangles, int seed)
     {
         this.vertices = vertices;
         this.triangles = triangles;
         this.offset = float3.zero;
         this.cell = new WorleyNoise.CellProfile();
+        this.simplex = new SimplexNoise(seed, 0.9f, negative: true);
     }
 
     public void Draw(WorleyNoise.CellProfile cell, float3 offset)
@@ -91,6 +93,9 @@ public struct Leaves
 
     void VertAndTri(float3 vert)
     {
+        float jitter = simplex.GetSimplex(vert.x + cell.data.position.x, vert.z + cell.data.position.z);
+        vert.y += jitter;
+
         vertices.Add(vert + offset);
         triangles.Add(vertices.Length-1);
     }

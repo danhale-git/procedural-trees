@@ -17,6 +17,7 @@ public struct SimplexNoise
     float frequency;
 
     public bool fractal;
+    public bool negative;
 
     float lacunarity;
     float fractalBounding;
@@ -46,7 +47,7 @@ public struct SimplexNoise
         }
     }
 
-    public SimplexNoise(int seed, float frequency, float lacunarity, FractalType fractalType, int octaves, float gain)
+    public SimplexNoise(int seed, float frequency, float lacunarity, FractalType fractalType, int octaves, float gain, bool negative = false)
     {
         this.seed = seed;
         this.frequency = frequency;
@@ -56,6 +57,7 @@ public struct SimplexNoise
         this.fractalType = fractalType;
         this.octaves = octaves;
         this.gain = gain;
+        this.negative = negative;
 
         fractal = true;
 
@@ -79,10 +81,11 @@ public struct SimplexNoise
 		fractalBounding = 1 / ampFractal;
 	}
 
-    public SimplexNoise(int seed, float frequency)
+    public SimplexNoise(int seed, float frequency, bool negative = false)
     {
         this.seed = seed;
         this.frequency = frequency;
+        this.negative = negative;
 
         lacunarity = 0;
         fractalBounding = 0;
@@ -260,7 +263,7 @@ public struct SimplexNoise
 
     float To01(float value)
 	{
-		return (value * 0.5f) + 0.5f;
+		return negative ? value : (value * 0.5f) + 0.5f;
 	}
 
     int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }

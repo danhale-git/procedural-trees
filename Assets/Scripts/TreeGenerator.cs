@@ -50,7 +50,7 @@ public struct TreeGenerator
 
     void DrawChildCells(float2 frequency)
     {
-        Leaves leaves = new Leaves(vertices, triangles);
+        Leaves leaves = new Leaves(vertices, triangles, worley.seed);
 
         WorleyNoise childWorley = worley;
         childWorley.frequency = frequency;
