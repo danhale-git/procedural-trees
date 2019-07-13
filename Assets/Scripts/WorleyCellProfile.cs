@@ -17,7 +17,7 @@ public struct WorleyCellProfile
         this.cellPosition = cell.position;
 
         this.triangles = new NativeList<BowyerWatson.Triangle>(Allocator.Temp);
-        var allTriangles = bowyerWatson.TriangulateCells(nineCells, cell);
+        var allTriangles = bowyerWatson.TriangulateCells(nineCells);
         AddEligibleTriangles(allTriangles);
 
         SortTrianglesClockwise();
@@ -63,6 +63,13 @@ public struct WorleyCellProfile
 
     void SortTrianglesClockwise()
     {
+        for(int i = 0; i < triangles.Length; i++)
+        {
+            BowyerWatson.Triangle triangle = triangles[i];
+            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
+            triangles[i] = triangle;
+        }
+
         var sortedTriangles = new NativeArray<BowyerWatson.Triangle>(triangles.Length, Allocator.Temp);
         sortedTriangles.CopyFrom(triangles);
         sortedTriangles.Sort();

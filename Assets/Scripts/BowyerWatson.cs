@@ -5,8 +5,6 @@ public struct BowyerWatson
 {
     public Triangle superTriangle;
 
-    float3 cellPosition;
-
     NativeList<Vertex> points;
     NativeList<Triangle> triangles;
     NativeList<Edge> edges;
@@ -89,10 +87,8 @@ public struct BowyerWatson
         }
 	}
 
-    public NativeList<Triangle> TriangulateCells(NativeArray<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
+    public NativeList<Triangle> TriangulateCells(NativeArray<WorleyNoise.CellData> nineCells)
     {
-        this.cellPosition = cell.position;
-
         this.triangles = new NativeList<Triangle>(Allocator.TempJob);
         this.points = new NativeList<Vertex>(Allocator.Temp);
         for(int i = 0; i < nineCells.Length; i++)
@@ -270,7 +266,6 @@ public struct BowyerWatson
             triangle.b = edges[i].b;
             triangle.c = point;
             triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
-            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
 
             triangles.Add(triangle);
         }
