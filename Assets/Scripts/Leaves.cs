@@ -22,6 +22,20 @@ public struct Leaves
 
     public void Draw(WorleyNoise.CellProfile cell)
     {
+        BowyerWatson bowyerWatson = new BowyerWatson();
+
+        NativeList<BowyerWatson.Triangle> trianglesList = bowyerWatson.Triangulate(cell.vertices);
+
+        for(int i = 0; i < trianglesList.Length; i++)
+        {
+            VertAndTri(trianglesList[i].a.pos);
+            VertAndTri(trianglesList[i].b.pos);
+            VertAndTri(trianglesList[i].c.pos);
+        }
+    } 
+
+    /*public void Draw(WorleyNoise.CellProfile cell)
+    {
         float3 center = vectorUtil.MeanPoint(cell.vertices);
 
         this.cell = cell;
@@ -72,7 +86,7 @@ public struct Leaves
                 VertAndTri(center);
             }
         }
-    }
+    }  */
 
     bool SegmentIsThin(int index)
     {
