@@ -28,7 +28,6 @@ public struct WorleyCellProfile
 
         var cellProfile = new WorleyNoise.CellProfile();
         cellProfile.data = cell;
-        cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
         cellProfile.vertices = new NativeArray<float3>(cellVertices, Allocator.Temp);
         cellProfile.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(adjacentCells, Allocator.Temp);
 
