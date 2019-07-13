@@ -6,17 +6,15 @@ public struct Leaves
     NativeList<float3> vertices;
     NativeList<int> triangles;
     WorleyNoise.CellProfile cell;
-    Random random;
 
     VectorUtil vectorUtil;
 
     const int minSegmentAngle = 10;
 
-    public Leaves(NativeList<float3> vertices, NativeList<int> triangles, Random random)
+    public Leaves(NativeList<float3> vertices, NativeList<int> triangles)
     {
         this.vertices = vertices;
         this.triangles = triangles;
-        this.random = random;
         cell = new WorleyNoise.CellProfile();
     }
 

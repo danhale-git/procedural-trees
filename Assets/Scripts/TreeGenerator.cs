@@ -29,7 +29,7 @@ public struct TreeGenerator
 
         WorldToLocal(cellProfile.vertices);
 
-        Leaves leaves = new Leaves(vertices, triangles, random);
+        Leaves leaves = new Leaves(vertices, triangles);
         leaves.Draw(cellProfile);
         
         //DrawTrunk();
