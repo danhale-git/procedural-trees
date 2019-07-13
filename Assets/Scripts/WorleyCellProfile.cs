@@ -9,37 +9,46 @@ public struct WorleyCellProfile
     BowyerWatson bowyerWatson;
     VectorUtil vectorUtil;
 
-    //TODO: rename script/struct and add small segment removal option
+    NativeList<float3> cellVertices;
+    NativeList<WorleyNoise.CellDataX2> adjacentCells;
+
     public WorleyNoise.CellProfile GetCellProfile(NativeArray<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
         this.cellPosition = cell.position;
+
         this.triangles = new NativeList<BowyerWatson.Triangle>(Allocator.Temp);
-
-        this.bowyerWatson = new BowyerWatson();
-
-        var allTriangles = bowyerWatson.BowyerWatsonTriangulation(nineCells, cell);
+        var allTriangles = bowyerWatson.TriangulateCells(nineCells, cell);
         AddEligibleTriangles(allTriangles);
 
         SortTrianglesClockwise();
 
+        this.cellVertices = new NativeList<float3>(Allocator.Temp);
+        this.adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
+        GetCellVerticesAndAdjacentCells();
+
         var cellProfile = new WorleyNoise.CellProfile();
         cellProfile.data = cell;
-        cellProfile.vertices = GatherCellEdgeVertices(out cellProfile.adjacentCells);
         cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
+        cellProfile.vertices = new NativeArray<float3>(cellVertices, Allocator.Temp);
+        cellProfile.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(adjacentCells, Allocator.Temp);
+
+        triangles.Dispose();
+        cellVertices.Dispose();
+        adjacentCells.Dispose();
 
         return cellProfile;
     }
 
-    void AddEligibleTriangles(NativeList<BowyerWatson.Triangle> trianglesCopy)
+    void AddEligibleTriangles(NativeList<BowyerWatson.Triangle> allTriangles)
     {
-        for(int i = 0; i < trianglesCopy.Length; i++)
+        for(int i = 0; i < allTriangles.Length; i++)
         {
-            BowyerWatson.Triangle triangle = trianglesCopy[i];
+            BowyerWatson.Triangle triangle = allTriangles[i];
             if(!SharesVertexWithSupertriangle(triangle))
                 triangles.Add(triangle);
         }
 
-        trianglesCopy.Dispose();
+        allTriangles.Dispose();
     }
 
     bool SharesVertexWithSupertriangle(BowyerWatson.Triangle triangle)
@@ -61,44 +70,41 @@ public struct WorleyCellProfile
         sortedTriangles.Dispose();
     }
 
-    NativeArray<float3> GatherCellEdgeVertices(out NativeArray<WorleyNoise.CellDataX2> adjacentCellsArray)
+    void GetCellVerticesAndAdjacentCells()
     {
-        var edgeVertices = new NativeList<float3>(Allocator.Temp);
-        var adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
-
         for(int t = 0; t < triangles.Length; t++)
         {
             BowyerWatson.Triangle triangle = triangles[t];
-            bool triangleInCell = false;
-
-            int floatIndex = 0;
-            var adjacentCellPair = new WorleyNoise.CellDataX2();
-
-            for(int i = 0; i < 3; i++)
-                if(triangle[i].pos.Equals(cellPosition))
-                    triangleInCell = true;
-                else if(floatIndex > 1)
-                    continue;
-                else
-                {
-                    adjacentCellPair[floatIndex] = triangle[i].cell;
-                    floatIndex++;
-                }
-
-            if(triangleInCell)
-            {
-                edgeVertices.Add(triangle.circumcircle.center);
-                adjacentCells.Add(SortCellPairClockwise(adjacentCellPair));
-            }
+            AddTriangleIfInCell(triangle);
         }
+    }
 
-        var vertexArray = new NativeArray<float3>(edgeVertices.Length, Allocator.Temp);
-        adjacentCellsArray = new NativeArray<WorleyNoise.CellDataX2>(edgeVertices.Length, Allocator.Temp);
-        
-        vertexArray.CopyFrom(edgeVertices);
-        adjacentCellsArray.CopyFrom(adjacentCells);
+    void AddTriangleIfInCell(BowyerWatson.Triangle triangle)
+    {
+        bool triangleInCell = false;
 
-        return vertexArray;
+        int floatIndex = 0;
+        var adjacentCellPair = new WorleyNoise.CellDataX2();
+
+        for(int i = 0; i < 3; i++)
+            if(triangle[i].pos.Equals(cellPosition))
+            {
+                triangleInCell = true;
+            }
+            else
+            {
+                if(floatIndex > 1)
+                    continue;
+
+                adjacentCellPair[floatIndex] = triangle[i].cell;
+                floatIndex++;
+            }
+
+        if(triangleInCell)
+        {
+            cellVertices.Add(triangle.circumcircle.center);
+            adjacentCells.Add(SortCellPairClockwise(adjacentCellPair));
+        }
     }
 
     WorleyNoise.CellDataX2 SortCellPairClockwise(WorleyNoise.CellDataX2 original)
@@ -107,21 +113,16 @@ public struct WorleyCellProfile
                         vectorUtil.RotationFromUp(original.c1.position, cellPosition);
 
         if(wrongWay)
-        {
-            var result = new WorleyNoise.CellDataX2();
-            result.c0 = original.c1;
-            result.c1 = original.c0;
-            return result;
-        }
+            return FlipCellDataX2(original);
         else
             return original;
     }
 
-
-    void DrawTriangle(BowyerWatson.Triangle triangle, UnityEngine.Color color)
+    WorleyNoise.CellDataX2 FlipCellDataX2(WorleyNoise.CellDataX2 original)
     {
-        UnityEngine.Debug.DrawLine(triangle.a.pos, triangle.b.pos, color, 100);
-        UnityEngine.Debug.DrawLine(triangle.a.pos, triangle.c.pos, color, 100);
-        UnityEngine.Debug.DrawLine(triangle.c.pos, triangle.b.pos, color, 100);
+        var result = new WorleyNoise.CellDataX2();
+        result.c0 = original.c1;
+        result.c1 = original.c0;
+        return result;
     }
 }

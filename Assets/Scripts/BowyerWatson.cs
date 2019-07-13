@@ -89,7 +89,7 @@ public struct BowyerWatson
         }
 	}
 
-    public NativeList<Triangle> BowyerWatsonTriangulation(NativeArray<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
+    public NativeList<Triangle> TriangulateCells(NativeArray<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
         this.cellPosition = cell.position;
 
@@ -152,7 +152,7 @@ public struct BowyerWatson
         triangle.a = new Vertex(frontVertex);
         triangle.b = new Vertex(rightVertex);
         triangle.c = new Vertex(leftVertex);
-        triangle.circumcircle = GetCircumcircle(triangle.a.pos, triangle.b.pos, triangle.c.pos);
+        triangle.circumcircle = GetCircumcircle(frontVertex, rightVertex, leftVertex);
 
         return triangle;
     }
