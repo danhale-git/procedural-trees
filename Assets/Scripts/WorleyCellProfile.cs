@@ -24,6 +24,8 @@ public struct WorleyCellProfile
         this.adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
         GetCellVerticesAndAdjacentCells();
 
+        WorldToLocalVertexPositions();
+
         var cellProfile = new WorleyNoise.CellProfile();
         cellProfile.data = cell;
         cellProfile.meanPoint = vectorUtil.MeanPoint(cellProfile.vertices);
@@ -35,6 +37,12 @@ public struct WorleyCellProfile
         adjacentCells.Dispose();
 
         return cellProfile;
+    }
+
+    void WorldToLocalVertexPositions()
+    {
+        for(int i = 0; i < cellVertices.Length; i++)
+            cellVertices[i] = cellVertices[i] - cellPosition;
     }
 
     void SortTrianglesClockwise()

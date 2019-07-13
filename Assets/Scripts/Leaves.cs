@@ -5,6 +5,7 @@ public struct Leaves
 {
     NativeList<float3> vertices;
     NativeList<int> triangles;
+    float3 offset;
     WorleyNoise.CellProfile cell;
 
     VectorUtil vectorUtil;
@@ -15,14 +16,16 @@ public struct Leaves
     {
         this.vertices = vertices;
         this.triangles = triangles;
-        cell = new WorleyNoise.CellProfile();
+        this.offset = float3.zero;
+        this.cell = new WorleyNoise.CellProfile();
     }
 
-    public void Draw(WorleyNoise.CellProfile cell)
+    public void Draw(WorleyNoise.CellProfile cell, float3 offset)
     {
-        float3 center = vectorUtil.MeanPoint(cell.vertices);
-
+        this.offset = offset;
         this.cell = cell;
+
+        float3 center = vectorUtil.MeanPoint(cell.vertices);
 
         var newVertices = new NativeList<float3>(Allocator.Temp);
 
@@ -88,7 +91,7 @@ public struct Leaves
 
     void VertAndTri(float3 vert)
     {
-        vertices.Add(vert);
+        vertices.Add(vert + offset);
         triangles.Add(vertices.Length-1);
     }
 }

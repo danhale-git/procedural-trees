@@ -10,7 +10,7 @@ public struct TreeGenerator
     public GameObject meshPrefab;
     public Material material;
 
-    WorleyNoise.CellProfile cellProfile;
+    WorleyNoise.CellProfile parentCellProfile;
 
     NativeList<float3> vertices;
     NativeList<int> triangles;
@@ -24,15 +24,17 @@ public struct TreeGenerator
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         
-        cellProfile = worley.GetCellProfile(cellIndex);
-        random = new Unity.Mathematics.Random((uint)(cellProfile.data.value * 1000));
+        parentCellProfile = worley.GetCellProfile(cellIndex);
+        random = new Unity.Mathematics.Random((uint)(parentCellProfile.data.value * 1000));
 
-        WorldToLocal(cellProfile.vertices);
-
-        Leaves leaves = new Leaves(vertices, triangles);
-        leaves.Draw(cellProfile);
+        //Leaves leaves = new Leaves(vertices, triangles);
+        //leaves.Draw(parentCellProfile);
         
+        DrawChildCells(worley.frequency*2);
+
         //DrawTrunk();
+
+        DrawCell(parentCellProfile);
 
         MakeMesh();
 
@@ -40,10 +42,60 @@ public struct TreeGenerator
         triangles.Dispose();
     }
 
-    void WorldToLocal(NativeArray<float3> worldPositions)
+    void DrawChildCells(float2 frequency)
     {
-        for(int i = 0; i < worldPositions.Length; i++)
-            worldPositions[i] = worldPositions[i] - cellProfile.data.position;
+        Leaves leaves = new Leaves(vertices, triangles);
+
+        WorleyNoise childWorley = worley;
+        childWorley.frequency = frequency;
+
+        WorleyNoise.CellData startChild = childWorley.GetCellData(parentCellProfile.data.position);
+
+        var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
+        var alreadyChecked = new NativeList<int2>(Allocator.Temp);
+
+        checkNext.Enqueue(startChild);
+        alreadyChecked.Add(startChild.index);
+
+        int safety = 0;
+
+        while(checkNext.Count > 0)
+        {
+            if(safety > 100) break;
+            safety++;
+
+            WorleyNoise.CellData childData = checkNext.Dequeue();
+
+            WorleyNoise.CellData dataFromParent = worley.GetCellData(childData.position);
+            bool childIsInParent = dataFromParent.index.Equals(parentCellProfile.data.index);
+
+            if(!childIsInParent)
+                continue;
+
+            WorleyNoise.CellProfile childProfile = childWorley.GetCellProfile(childData);
+            float3 positionInParent = childProfile.data.position - parentCellProfile.data.position;
+            positionInParent.y += 10;//DEBUG
+            leaves.Draw(childProfile, positionInParent);
+
+            for(int i = 0; i < childProfile.vertices.Length; i++)
+            {
+                WorleyNoise.CellData adjacent = childProfile.adjacentCells[i].c0;
+                if(!alreadyChecked.Contains(adjacent.index))
+                {
+                    checkNext.Enqueue(adjacent);
+                    alreadyChecked.Add(adjacent.index);
+                }
+
+            }
+        }
+
+        checkNext.Dispose();
+        alreadyChecked.Dispose();
+    }
+
+    void DrawLeaves()
+    {
+        
     }
 
     void DrawTrunk()
@@ -62,9 +114,9 @@ public struct TreeGenerator
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
 
-        for(int i = 0; i < cellProfile.vertices.Length; i++)
+        for(int i = 0; i < parentCellProfile.vertices.Length; i++)
         {
-            vertices.Add(cellProfile.vertices[i] * size);
+            vertices.Add(parentCellProfile.vertices[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
@@ -130,6 +182,15 @@ public struct TreeGenerator
         meshRenderer.material.color = new Color(randomColor.x, randomColor.y, randomColor.z);
         //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
-        meshObject.transform.Translate(cellProfile.data.position);
+        meshObject.transform.Translate(parentCellProfile.data.position);
+    }
+
+    void DrawCell(WorleyNoise.CellProfile cell)
+    {
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            int next = i == cell.vertices.Length-1 ? 0 : i+1;
+            UnityEngine.Debug.DrawLine(cell.vertices[i]+cell.data.position, cell.vertices[next]+cell.data.position, UnityEngine.Color.green, 100);
+        }
     }
 }
