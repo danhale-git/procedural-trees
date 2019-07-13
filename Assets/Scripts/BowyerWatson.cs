@@ -111,7 +111,7 @@ public struct BowyerWatson
 
     void Triangulate()
     {
-        this.triangles = new NativeList<Triangle>(Allocator.TempJob);
+        this.triangles = new NativeList<Triangle>(Allocator.Temp);
         this.superTriangle = SuperTriangle();
         triangles.Add(superTriangle);
 
@@ -126,6 +126,8 @@ public struct BowyerWatson
 
             edges.Dispose();
         }
+
+        RemoveExternalTriangles();
 
         points.Dispose();
     }
@@ -216,7 +218,8 @@ public struct BowyerWatson
 
     void RemoveIntersectingTriangles(Vertex vert)
     {
-        NativeArray<Triangle> trianglesCopy = CopyAndClearTrianglesArray();
+        var trianglesCopy = new NativeArray<Triangle>(triangles, Allocator.Temp);
+        triangles.Clear();
 
         for(int i = 0; i < trianglesCopy.Length; i++)
         {
@@ -237,14 +240,6 @@ public struct BowyerWatson
         }
 
         trianglesCopy.Dispose();
-    }
-
-    NativeArray<Triangle> CopyAndClearTrianglesArray()
-    {
-        NativeArray<Triangle> trianglesCopy = new NativeArray<Triangle>(triangles.Length, Allocator.Persistent);
-        trianglesCopy.CopyFrom(triangles.ToArray());
-        triangles.Clear();
-        return trianglesCopy;
     }
 
     void AddOrRemoveEdge(Edge edge)
@@ -297,5 +292,30 @@ public struct BowyerWatson
             sum += vertices[i].pos;
         }
         return sum / vertices.Length;
+    }
+
+    void RemoveExternalTriangles()
+    {
+        var trianglesCopy = new NativeArray<Triangle>(triangles, Allocator.Temp);
+        triangles.Clear();
+
+        for(int i = 0; i < trianglesCopy.Length; i++)
+        {
+            BowyerWatson.Triangle triangle = trianglesCopy[i];
+            if(!SharesVertexWithSupertriangle(triangle))
+                triangles.Add(triangle);
+        }
+
+        trianglesCopy.Dispose();
+    }
+
+    bool SharesVertexWithSupertriangle(BowyerWatson.Triangle triangle)
+    {
+        for(int t = 0; t < 3; t++)
+            for(int s = 0; s < 3; s++)
+                if(triangle[t].Equals(superTriangle[s]))
+                    return true;
+
+        return false;
     }
 }

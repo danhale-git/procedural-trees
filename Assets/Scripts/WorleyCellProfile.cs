@@ -16,9 +16,7 @@ public struct WorleyCellProfile
     {
         this.cellPosition = cell.position;
 
-        this.triangles = new NativeList<BowyerWatson.Triangle>(Allocator.Temp);
-        var allTriangles = bowyerWatson.Triangulate(nineCells);
-        AddEligibleTriangles(allTriangles);
+        this.triangles = bowyerWatson.Triangulate(nineCells);
 
         SortTrianglesClockwise();
 
@@ -37,28 +35,6 @@ public struct WorleyCellProfile
         adjacentCells.Dispose();
 
         return cellProfile;
-    }
-
-    void AddEligibleTriangles(NativeList<BowyerWatson.Triangle> allTriangles)
-    {
-        for(int i = 0; i < allTriangles.Length; i++)
-        {
-            BowyerWatson.Triangle triangle = allTriangles[i];
-            if(!SharesVertexWithSupertriangle(triangle))
-                triangles.Add(triangle);
-        }
-
-        allTriangles.Dispose();
-    }
-
-    bool SharesVertexWithSupertriangle(BowyerWatson.Triangle triangle)
-    {
-        for(int t = 0; t < 3; t++)
-            for(int s = 0; s < 3; s++)
-                if(triangle[t].Equals(bowyerWatson.superTriangle[s]))
-                    return true;
-
-        return false;
     }
 
     void SortTrianglesClockwise()
