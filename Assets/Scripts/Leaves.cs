@@ -26,29 +26,51 @@ public struct Leaves
 
         this.cell = cell;
 
-        //int vertexGroupSize = cell.vertices.Length / 3;
-        //int remainder = cell.vertices.Length % 3;
-
-        
-
-
         for(int i = 0; i < cell.vertices.Length; i++)
         {
-            int next = i == cell.vertices.Length-1 ? 0 : i+1;
-
-            bool skipNext = SegmentIsThin(i);
-            if(skipNext) continue;
+            int next = NextVertIndex(i);
 
             float3 currentEdge = cell.vertices[i];
             float3 nextEdge = cell.vertices[next];
 
             float3 currentMid = vectorUtil.MidPoint(center, currentEdge, 0.6f);
+
             float3 nextMid = vectorUtil.MidPoint(center, nextEdge, 0.6f);
+
             float3 edgeMid = vectorUtil.MidPoint(currentEdge, nextEdge);
 
-            VertAndTri(cell.vertices[i]);
-            VertAndTri(cell.vertices[next]);
-            VertAndTri(center);
+            if(SegmentIsThin(i))
+            {
+                VertAndTri(nextMid);
+                VertAndTri(currentMid);
+                VertAndTri(currentEdge);
+                
+                VertAndTri(currentEdge);
+                VertAndTri(nextEdge);
+                VertAndTri(nextMid);
+                
+                VertAndTri(currentMid);
+                VertAndTri(nextMid);
+                VertAndTri(center);
+            }
+            else
+            {
+                VertAndTri(edgeMid);
+                VertAndTri(currentMid);
+                VertAndTri(currentEdge);
+
+                VertAndTri(edgeMid);
+                VertAndTri(nextMid);
+                VertAndTri(currentMid);
+                
+                VertAndTri(nextEdge);
+                VertAndTri(nextMid);
+                VertAndTri(edgeMid);
+
+                VertAndTri(currentMid);
+                VertAndTri(nextMid);
+                VertAndTri(center);
+            }
         }
     }
 
