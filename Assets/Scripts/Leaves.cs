@@ -9,7 +9,6 @@ public struct Leaves
     WorleyNoise.CellProfile cell;
 
     VectorUtil vectorUtil;
-    SimplexNoise simplex;
 
     float3 center;
     float height;
@@ -24,7 +23,6 @@ public struct Leaves
         this.triangles = triangles;
         this.offset = float3.zero;
         this.cell = new WorleyNoise.CellProfile();
-        this.simplex = new SimplexNoise(seed, 0.5f, negative: true);
 
         this.center = float3.zero;
         this.height = 0;
@@ -39,38 +37,33 @@ public struct Leaves
         RemoveSmallSegments();
         SoftenAcuteCorners();
 
-        this.height = GetHeight();
+        this.height = FarthestVertexDistance();
 
         this.center = vectorUtil.MeanPoint(this.cell.vertices);
-        center.y += height;
+        center.y += height * 1.2f;
 
         DrawCell();
     }
 
     void DrawCell()
     {
+        const float dropHorizontalMultiplier = 1.3f;
+        const float dropVerticalMultiplier = 0.5f;
+
+
         for(int i = 0; i < cell.vertices.Length; i++)
         {
             float3 currentEdge = cell.vertices[i];
             float3 nextEdge = cell.vertices[WrapVertIndex(i + 1)];
 
-            DrawTriangle(currentEdge, nextEdge, center);
-        }
-        return;
-        for(int i = 0; i < cell.vertices.Length; i++)
-        {
-            float3 currentEdge = cell.vertices[i];
-            float3 nextEdge = cell.vertices[WrapVertIndex(i + 1)];
-
-            float3 currentDrop = math.lerp(currentEdge, nextEdge, 0.5f);
-            float3 nextDrop = math.lerp(nextEdge, cell.vertices[WrapVertIndex(i+2)], 0.5f);
+            float3 currentDrop = math.lerp(currentEdge, nextEdge, 0.5f) * dropHorizontalMultiplier;
+            float3 nextDrop = math.lerp(nextEdge, cell.vertices[WrapVertIndex(i+2)], 0.5f) * dropHorizontalMultiplier;
 
             currentEdge.y += height;
-            currentEdge *= 0.7f;
             nextEdge.y += height;
-            nextEdge *= 0.7f;
-            currentDrop.y += height*0.5f;
-            nextDrop.y += height*0.5f;
+
+            currentDrop.y += height*dropVerticalMultiplier;
+            nextDrop.y += height*dropVerticalMultiplier;
 
             DrawTriangle(currentEdge, nextEdge, center);
 
@@ -87,9 +80,8 @@ public struct Leaves
         bool smallSegmentFound = false;
         for(int i = 0; i < cell.vertices.Length; i++)
         {
-            int next = WrapVertIndex(i+1);
             float3 currentVertex = cell.vertices[i];
-            float3 nextVertex = cell.vertices[next];
+            float3 nextVertex = cell.vertices[WrapVertIndex(i+1)];
 
             float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
 
@@ -130,69 +122,7 @@ public struct Leaves
         }
     }
 
-    /*public void Draw(WorleyNoise.CellProfile cell, float3 offset)
-    {
-        this.offset = offset;
-        this.cell = cell;
-
-        float height = GetHeight();
-
-        float3 center = vectorUtil.MeanPoint(cell.vertices);
-        center.y += height;
-
-        for(int i = 0; i < cell.vertices.Length; i++)
-        {
-            float3 currentEdge = cell.vertices[i];
-            float3 nextEdge = cell.vertices[NextVertIndex(i)];
-
-
-            float3 currentMid = vectorUtil.MidPoint(center, currentEdge, 0.6f);
-            currentMid.y = height;
-            currentMid *= 0.8f;
-
-            float3 nextMid = vectorUtil.MidPoint(center, nextEdge, 0.6f);
-            nextMid.y = height;
-            nextMid *= 0.8f;
-
-            float3 edgeMid = vectorUtil.MidPoint(currentEdge, nextEdge);
-            edgeMid *= 1.1f;
-
-            if(SegmentIsThin(currentEdge, nextEdge))
-            {
-                VertAndTri(nextMid);
-                VertAndTri(currentMid);
-                VertAndTri(currentEdge);
-                
-                VertAndTri(currentEdge);
-                VertAndTri(nextEdge);
-                VertAndTri(nextMid);
-                
-                VertAndTri(currentMid);
-                VertAndTri(nextMid);
-                VertAndTri(center);
-            }
-            else
-            {
-                VertAndTri(edgeMid);
-                VertAndTri(currentMid);
-                VertAndTri(currentEdge);
-
-                VertAndTri(edgeMid);
-                VertAndTri(nextMid);
-                VertAndTri(currentMid);
-                
-                VertAndTri(nextEdge);
-                VertAndTri(nextMid);
-                VertAndTri(edgeMid);
-
-                VertAndTri(currentMid);
-                VertAndTri(nextMid);
-                VertAndTri(center);
-            }
-        }
-    }  */
-
-    float GetHeight()
+    float FarthestVertexDistance()
     {
         float farthest = 0;
         for(int i = 0; i < cell.vertices.Length; i++)
@@ -203,11 +133,6 @@ public struct Leaves
         }
 
         return farthest;
-    }
-
-    bool SegmentIsThin(float3 a, float3 b)
-    {
-        return vectorUtil.Angle(a, b) < minSegmentAngle;
     }
 
     int WrapVertIndex(int index)
@@ -229,9 +154,6 @@ public struct Leaves
 
     void VertAndTri(float3 vert)
     {
-        //float jitter = simplex.GetSimplex(vert.x + cellProfile.data.position.x, vert.z + cellProfile.data.position.z);
-        //vert += jitter * 0.5f;
-
         vertices.Add(vert + offset);
         triangles.Add(vertices.Length-1);
     }
