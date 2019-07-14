@@ -14,10 +14,9 @@ public struct Leaves
     float height;
     NativeArray<bool> alteredVertices;
 
-    const int minSegmentAngle = 30;
     const int minCornerAngle = 90;
 
-    public Leaves(NativeList<float3> vertices, NativeList<int> triangles, int seed)
+    public Leaves(NativeList<float3> vertices, NativeList<int> triangles)
     {
         this.vertices = vertices;
         this.triangles = triangles;
@@ -34,7 +33,6 @@ public struct Leaves
         this.offset = offset;
         this.cell = cellProfile;
 
-        RemoveSmallSegments();
         SoftenAcuteCorners();
 
         this.height = FarthestVertexDistance();
@@ -64,35 +62,6 @@ public struct Leaves
 
             DrawTriangle(currentDrop, nextEdge, currentEdge);
             DrawTriangle(currentDrop, nextDrop, nextEdge);
-        }
-    }
-
-    void RemoveSmallSegments()
-    {
-        var newVertices = new NativeList<float3>(Allocator.Temp);
-        var newAdjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
-
-        bool smallSegmentFound = false;
-        for(int i = 0; i < cell.vertices.Length; i++)
-        {
-            float3 currentVertex = cell.vertices[i];
-            float3 nextVertex = cell.vertices[WrapVertIndex(i+1)];
-
-            float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
-
-            if(segmentAngle > minSegmentAngle)
-            {
-                newVertices.Add(currentVertex);
-                newAdjacentCells.Add(cell.adjacentCells[i]);
-            }
-            else if(!smallSegmentFound)
-                smallSegmentFound = true;
-        }
-
-        if(smallSegmentFound)
-        {
-            cell.vertices = new NativeArray<float3>(newVertices, Allocator.Temp);
-            cell.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
         }
     }
 

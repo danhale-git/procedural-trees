@@ -16,29 +16,30 @@ public struct TreeGenerator
     NativeList<float3> vertices;
     NativeList<int> triangles;
 
-    Unity.Mathematics.Random random;
-    VectorUtil vectorUtil;
-
     Leaves leaves;
     Trunk trunk;
 
+    Unity.Mathematics.Random random;
+    VectorUtil vectorUtil;
+
     float baseHeight;
+
+    const int minSegmentAngle = 30;
 
     public void Generate(int2 cellIndex)
     {
+        parentCell = RemoveSmallSegments(worley.GetCellProfile(cellIndex), minSegmentAngle);
+
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
-        triangles = new NativeList<int>(Allocator.Temp);
-        
-        parentCell = worley.GetCellProfile(cellIndex);
-        random = new Unity.Mathematics.Random((uint)(parentCell.data.value * 1000));
 
-        leaves = new Leaves(vertices, triangles, worley.seed);
+        leaves = new Leaves(vertices, triangles);
+        
+        random = new Unity.Mathematics.Random((uint)(parentCell.data.value * 1000));
 
         baseHeight = simplex.GetSimplex(parentCell.data.position.x, parentCell.data.position.z) * 15;
 
         DrawChildCells(worley.frequency*2);
-        //Leaves leaves = new Leaves(vertices, triangles, worley.seed);
         //leaves.Draw(parentCellProfile, 0);
 
         DrawTrunk();
@@ -49,6 +50,38 @@ public struct TreeGenerator
 
         vertices.Dispose();
         triangles.Dispose();
+    }
+
+    WorleyNoise.CellProfile RemoveSmallSegments(WorleyNoise.CellProfile cell, int minSegmentAngle)
+    {
+        var newVertices = new NativeList<float3>(Allocator.Temp);
+        var newAdjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
+
+        bool smallSegmentFound = false;
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            int next = i == cell.vertices.Length-1 ? 0 : i+1;
+            float3 currentVertex = cell.vertices[i];
+            float3 nextVertex = cell.vertices[next];
+
+            float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
+
+            if(segmentAngle > minSegmentAngle)
+            {
+                newVertices.Add(currentVertex);
+                newAdjacentCells.Add(cell.adjacentCells[i]);
+            }
+            else if(!smallSegmentFound)
+                smallSegmentFound = true;
+        }
+
+        if(smallSegmentFound)
+        {
+            cell.vertices = new NativeArray<float3>(newVertices, Allocator.Temp);
+            cell.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
+        }
+
+        return cell;
     }
 
     void DrawChildCells(float2 frequency)
