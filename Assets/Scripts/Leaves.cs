@@ -6,23 +6,76 @@ public struct Leaves
     NativeList<float3> vertices;
     NativeList<int> triangles;
     float3 offset;
-    WorleyNoise.CellProfile cell;
+    WorleyNoise.CellProfile cellProfile;
 
     VectorUtil vectorUtil;
     SimplexNoise simplex;
 
-    const int minSegmentAngle = 10;
+    const int minSegmentAngle = 30;
 
     public Leaves(NativeList<float3> vertices, NativeList<int> triangles, int seed)
     {
         this.vertices = vertices;
         this.triangles = triangles;
         this.offset = float3.zero;
-        this.cell = new WorleyNoise.CellProfile();
+        this.cellProfile = new WorleyNoise.CellProfile();
         this.simplex = new SimplexNoise(seed, 0.5f, negative: true);
     }
 
     public void Draw(WorleyNoise.CellProfile cell, float3 offset)
+    {
+        this.offset = offset;
+        this.cellProfile = cell;
+
+        RemoveSmallSegments();
+
+        float height = GetHeight();
+
+        float3 center = vectorUtil.MeanPoint(cellProfile.vertices);
+        center.y += height;
+
+        for(int i = 0; i < cellProfile.vertices.Length; i++)
+        {
+            float3 currentEdge = cellProfile.vertices[i];
+            float3 nextEdge = cellProfile.vertices[NextVertIndex(i)];
+            
+            DrawTriangle(currentEdge, nextEdge, center);
+        }
+    }
+
+    void RemoveSmallSegments()
+    {
+        var newVertices = new NativeList<float3>(Allocator.Temp);
+        var newAdjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
+
+        bool smallSegmentFound = false;
+        for(int i = 0; i < cellProfile.vertices.Length; i++)
+        {
+            int next = NextVertIndex(i);
+            float3 currentVertex = cellProfile.vertices[i];
+            float3 nextVertex = cellProfile.vertices[next];
+
+            float3 cornerAngleA = nextVertex - currentVertex;
+
+            float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
+
+            if(segmentAngle > minSegmentAngle)
+            {
+                newVertices.Add(currentVertex);
+                newAdjacentCells.Add(cellProfile.adjacentCells[i]);
+            }
+            else if(!smallSegmentFound)
+                smallSegmentFound = true;
+        }
+
+        if(smallSegmentFound)
+        {
+            cellProfile.vertices = new NativeArray<float3>(newVertices, Allocator.Temp);
+            cellProfile.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
+        }
+    }
+
+    /*public void Draw(WorleyNoise.CellProfile cell, float3 offset)
     {
         this.offset = offset;
         this.cell = cell;
@@ -82,14 +135,14 @@ public struct Leaves
                 VertAndTri(center);
             }
         }
-    } 
+    }  */
 
     float GetHeight()
     {
         float farthest = 0;
-        for(int i = 0; i < cell.vertices.Length; i++)
+        for(int i = 0; i < cellProfile.vertices.Length; i++)
         {
-            float distance = math.length(cell.vertices[i]);
+            float distance = math.length(cellProfile.vertices[i]);
             if(distance > farthest)
                 farthest = distance;
         }
@@ -102,14 +155,31 @@ public struct Leaves
         return vectorUtil.Angle(a, b) < minSegmentAngle;
     }
 
+    int WrapVertIndex(int index)
+    {
+        if(index >= cellProfile.vertices.Length-1)
+            return index - (cellProfile.vertices.Length-1);
+        else if(index < 0)
+            return index + cellProfile.vertices.Length;
+        else
+            return index;
+    }
+
     int NextVertIndex(int index)
     {
-        return index >= cell.vertices.Length-1 ? index - (cell.vertices.Length-1) : index+1; 
+        return index >= cellProfile.vertices.Length-1 ? index - (cellProfile.vertices.Length-1) : index+1; 
+    }
+
+    void DrawTriangle(float3 a, float3 b, float3 c)
+    {
+        VertAndTri(a);
+        VertAndTri(b);
+        VertAndTri(c);
     }
 
     void VertAndTri(float3 vert)
     {
-        float jitter = simplex.GetSimplex(vert.x + cell.data.position.x, vert.z + cell.data.position.z);
+        float jitter = simplex.GetSimplex(vert.x + cellProfile.data.position.x, vert.z + cellProfile.data.position.z);
         //vert += jitter * 0.5f;
 
         vertices.Add(vert + offset);
