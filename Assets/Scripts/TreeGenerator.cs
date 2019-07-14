@@ -29,9 +29,9 @@ public struct TreeGenerator
         parentCellProfile = worley.GetCellProfile(cellIndex);
         random = new Unity.Mathematics.Random((uint)(parentCellProfile.data.value * 1000));
 
-        //DrawChildCells(worley.frequency*2);
-        Leaves leaves = new Leaves(vertices, triangles, worley.seed);
-        leaves.Draw(parentCellProfile, 0);
+        DrawChildCells(worley.frequency*2);
+        //Leaves leaves = new Leaves(vertices, triangles, worley.seed);
+        //leaves.Draw(parentCellProfile, 0);
 
         //DrawTrunk();
 
@@ -89,7 +89,6 @@ public struct TreeGenerator
                     checkNext.Enqueue(adjacent);
                     alreadyChecked.Add(adjacent.index);
                 }
-
             }
         }
 
@@ -177,6 +176,7 @@ public struct TreeGenerator
 
         //meshRenderer.material.color = randomColor;
         meshRenderer.material.color = UnityEngine.Color.white;
+        //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
         meshObject.transform.Translate(parentCellProfile.data.position);
     }
