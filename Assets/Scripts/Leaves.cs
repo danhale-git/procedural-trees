@@ -48,8 +48,6 @@ public struct Leaves
     void DrawCell()
     {
         const float dropHorizontalMultiplier = 1.3f;
-        const float dropVerticalMultiplier = 0.5f;
-
 
         for(int i = 0; i < cell.vertices.Length; i++)
         {
@@ -61,9 +59,6 @@ public struct Leaves
 
             currentEdge.y += height;
             nextEdge.y += height;
-
-            currentDrop.y += height*dropVerticalMultiplier;
-            nextDrop.y += height*dropVerticalMultiplier;
 
             DrawTriangle(currentEdge, nextEdge, center);
 
@@ -132,7 +127,7 @@ public struct Leaves
                 farthest = distance;
         }
 
-        return farthest;
+        return farthest * 0.5f;
     }
 
     int WrapVertIndex(int index)

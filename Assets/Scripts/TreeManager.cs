@@ -43,7 +43,8 @@ public class TreeManager : MonoBehaviour
         {
             worley = this.worley,
             meshPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TreeMesh.prefab"),
-            material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")
+            material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat"),
+            simplex = new SimplexNoise(worley.seed, 0.1f)
         };
 
         bool one = true;

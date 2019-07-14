@@ -9,8 +9,9 @@ public struct TreeGenerator
     public WorleyNoise worley;
     public GameObject meshPrefab;
     public Material material;
+    public SimplexNoise simplex;
 
-    WorleyNoise.CellProfile parentCellProfile;
+    WorleyNoise.CellProfile parentCell;
 
     NativeList<float3> vertices;
     NativeList<int> triangles;
@@ -18,46 +19,44 @@ public struct TreeGenerator
     Unity.Mathematics.Random random;
     VectorUtil vectorUtil;
 
-    Color randomColor;//DEBUG
-    
+    Leaves leaves;
+    Trunk trunk;
+
+    float baseHeight;
+
     public void Generate(int2 cellIndex)
     {
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
         
-        parentCellProfile = worley.GetCellProfile(cellIndex);
-        random = new Unity.Mathematics.Random((uint)(parentCellProfile.data.value * 1000));
+        parentCell = worley.GetCellProfile(cellIndex);
+        random = new Unity.Mathematics.Random((uint)(parentCell.data.value * 1000));
+
+        leaves = new Leaves(vertices, triangles, worley.seed);
+
+        baseHeight = simplex.GetSimplex(parentCell.data.position.x, parentCell.data.position.z) * 15;
 
         DrawChildCells(worley.frequency*2);
         //Leaves leaves = new Leaves(vertices, triangles, worley.seed);
         //leaves.Draw(parentCellProfile, 0);
 
-        //DrawTrunk();
+        DrawTrunk();
 
-        DrawCellLines(parentCellProfile);
+        DrawCellLines(parentCell);
 
         MakeMesh();
 
         vertices.Dispose();
         triangles.Dispose();
-
-        //DEBUG
-        random = new Unity.Mathematics.Random((uint)UnityEngine.Random.Range(0, 10000));
-        float3 col = random.NextFloat3(0, 1);
-        randomColor = new Color(col.x, col.y, col.z);
-        //TreeManager.CreateTextMesh(parentCellProfile.data.position + new float3(0,12,0), parentCellProfile.data.index.ToString(), randomColor*0.5f);
-        //DEBUG
     }
 
     void DrawChildCells(float2 frequency)
     {
-        Leaves leaves = new Leaves(vertices, triangles, worley.seed);
-
         WorleyNoise childWorley = worley;
         childWorley.frequency = frequency;
 
-        float3 meanPointWorld = parentCellProfile.data.position + vectorUtil.MeanPoint(parentCellProfile.vertices);
+        float3 meanPointWorld = parentCell.data.position + vectorUtil.MeanPoint(parentCell.vertices);
         WorleyNoise.CellData startChild = childWorley.GetCellData(meanPointWorld);
 
         var checkNext = new NativeQueue<WorleyNoise.CellData>(Allocator.Temp);
@@ -71,13 +70,14 @@ public struct TreeGenerator
             WorleyNoise.CellData childData = checkNext.Dequeue();
 
             WorleyNoise.CellData dataFromParent = worley.GetCellData(childData.position);
-            bool childIsInParent = dataFromParent.index.Equals(parentCellProfile.data.index);
+            bool childIsInParent = dataFromParent.index.Equals(parentCell.data.index);
 
             if(!childIsInParent)
                 continue;
 
             WorleyNoise.CellProfile childProfile = childWorley.GetCellProfile(childData);
-            float3 positionInParent = childProfile.data.position - parentCellProfile.data.position;
+            float3 positionInParent = childProfile.data.position - parentCell.data.position;
+            positionInParent.y += baseHeight;
 
             leaves.Draw(childProfile, positionInParent);
 
@@ -112,9 +112,9 @@ public struct TreeGenerator
     {
         NativeList<int> trunkIndices = new NativeList<int>(Allocator.Temp);
 
-        for(int i = 0; i < parentCellProfile.vertices.Length; i++)
+        for(int i = 0; i < parentCell.vertices.Length; i++)
         {
-            vertices.Add(parentCellProfile.vertices[i] * size);
+            vertices.Add(parentCell.vertices[i] * size);
             trunkIndices.Add(vertices.Length-1);
         }
 
@@ -178,7 +178,7 @@ public struct TreeGenerator
         meshRenderer.material.color = UnityEngine.Color.white;
         //meshRenderer.material.color = new Color(.4f,random.NextFloat(0.7f, 0.9f),.4f);
 
-        meshObject.transform.Translate(parentCellProfile.data.position);
+        meshObject.transform.Translate(parentCell.data.position);
     }
 
     void DrawCellLines(WorleyNoise.CellProfile cell)
