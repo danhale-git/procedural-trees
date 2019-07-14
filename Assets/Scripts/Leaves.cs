@@ -11,7 +11,12 @@ public struct Leaves
     VectorUtil vectorUtil;
     SimplexNoise simplex;
 
+    float3 center;
+    float height;
+    NativeArray<bool> alteredVertices;
+
     const int minSegmentAngle = 30;
+    const int minCornerAngle = 90;
 
     public Leaves(NativeList<float3> vertices, NativeList<int> triangles, int seed)
     {
@@ -20,6 +25,10 @@ public struct Leaves
         this.offset = float3.zero;
         this.cell = new WorleyNoise.CellProfile();
         this.simplex = new SimplexNoise(seed, 0.5f, negative: true);
+
+        this.center = float3.zero;
+        this.height = 0;
+        alteredVertices = new NativeArray<bool>();
     }
 
     public void Draw(WorleyNoise.CellProfile cellProfile, float3 offset)
@@ -28,18 +37,45 @@ public struct Leaves
         this.cell = cellProfile;
 
         RemoveSmallSegments();
+        SoftenAcuteCorners();
 
-        float height = GetHeight();
+        this.height = GetHeight();
 
-        float3 center = vectorUtil.MeanPoint(this.cell.vertices);
+        this.center = vectorUtil.MeanPoint(this.cell.vertices);
         center.y += height;
 
-        for(int i = 0; i < this.cell.vertices.Length; i++)
+        DrawCell();
+    }
+
+    void DrawCell()
+    {
+        for(int i = 0; i < cell.vertices.Length; i++)
         {
-            float3 currentEdge = this.cell.vertices[i];
-            float3 nextEdge = this.cell.vertices[WrapVertIndex(i + 1)];
+            float3 currentEdge = cell.vertices[i];
+            float3 nextEdge = cell.vertices[WrapVertIndex(i + 1)];
 
             DrawTriangle(currentEdge, nextEdge, center);
+        }
+        return;
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            float3 currentEdge = cell.vertices[i];
+            float3 nextEdge = cell.vertices[WrapVertIndex(i + 1)];
+
+            float3 currentDrop = math.lerp(currentEdge, nextEdge, 0.5f);
+            float3 nextDrop = math.lerp(nextEdge, cell.vertices[WrapVertIndex(i+2)], 0.5f);
+
+            currentEdge.y += height;
+            currentEdge *= 0.7f;
+            nextEdge.y += height;
+            nextEdge *= 0.7f;
+            currentDrop.y += height*0.5f;
+            nextDrop.y += height*0.5f;
+
+            DrawTriangle(currentEdge, nextEdge, center);
+
+            DrawTriangle(currentDrop, nextEdge, currentEdge);
+            DrawTriangle(currentDrop, nextDrop, nextEdge);
         }
     }
 
@@ -70,6 +106,27 @@ public struct Leaves
         {
             cell.vertices = new NativeArray<float3>(newVertices, Allocator.Temp);
             cell.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
+        }
+    }
+
+    void SoftenAcuteCorners()
+    {
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            float3 previousVertex = cell.vertices[WrapVertIndex(i-1)];
+            float3 currentVertex = cell.vertices[i];
+            float3 nextVertex = cell.vertices[WrapVertIndex(i+1)];
+            
+            float3 directionToPrevious = previousVertex - currentVertex;
+            float3 directionToNext = nextVertex - currentVertex;
+
+            float angle = vectorUtil.Angle(directionToNext, directionToPrevious);
+
+            if(angle < minCornerAngle)
+            {
+                float lengthMultiplier = math.unlerp(0, 90, angle);
+                cell.vertices[i] = math.lerp(center, currentVertex, lengthMultiplier);
+            }
         }
     }
 
@@ -145,7 +202,7 @@ public struct Leaves
                 farthest = distance;
         }
 
-        return farthest * 0.5f;
+        return farthest;
     }
 
     bool SegmentIsThin(float3 a, float3 b)
