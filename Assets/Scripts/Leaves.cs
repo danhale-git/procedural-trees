@@ -37,7 +37,7 @@ public struct Leaves
         for(int i = 0; i < cellProfile.vertices.Length; i++)
         {
             float3 currentEdge = cellProfile.vertices[i];
-            float3 nextEdge = cellProfile.vertices[NextVertIndex(i)];
+            float3 nextEdge = cellProfile.vertices[WrapVertIndex(i+1)];
             
             DrawTriangle(currentEdge, nextEdge, center);
         }
@@ -51,7 +51,7 @@ public struct Leaves
         bool smallSegmentFound = false;
         for(int i = 0; i < cellProfile.vertices.Length; i++)
         {
-            int next = NextVertIndex(i);
+            int next = WrapVertIndex(i+1);
             float3 currentVertex = cellProfile.vertices[i];
             float3 nextVertex = cellProfile.vertices[next];
 
@@ -157,17 +157,12 @@ public struct Leaves
 
     int WrapVertIndex(int index)
     {
-        if(index >= cellProfile.vertices.Length-1)
-            return index - (cellProfile.vertices.Length-1);
+        if(index >= cellProfile.vertices.Length)
+            return index - cellProfile.vertices.Length;
         else if(index < 0)
             return index + cellProfile.vertices.Length;
         else
             return index;
-    }
-
-    int NextVertIndex(int index)
-    {
-        return index >= cellProfile.vertices.Length-1 ? index - (cellProfile.vertices.Length-1) : index+1; 
     }
 
     void DrawTriangle(float3 a, float3 b, float3 c)
