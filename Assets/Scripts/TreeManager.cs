@@ -30,7 +30,7 @@ public class TreeManager : MonoBehaviour
         {
             frequency = 0.075f,
             //seed = random.NextInt(),
-            seed = 103658054,
+            seed = -878905037,
             perterbAmp = 0,
             cellularJitter = 0.3f,
             distanceFunction = WorleyNoise.DistanceFunction.Euclidean,
@@ -46,7 +46,7 @@ public class TreeManager : MonoBehaviour
             material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/DefaultMat.mat")
         };
 
-        bool one = false;
+        bool one = true;
         int range = 1;
 
         if(!one)
