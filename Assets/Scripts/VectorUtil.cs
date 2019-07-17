@@ -72,7 +72,16 @@ public struct VectorUtil
         for(int i = 0; i < points.Length; i++)
             sum += points[i];
 
-        return sum /= points.Length;
+        return sum / points.Length;
+    }
+
+    public float2 MeanPoint(NineValues<float2> points)
+    {
+        float2 sum = float2.zero;
+        for(int i = 0; i < points.Length; i++)
+            sum += points[i];
+
+        return sum / points.Length;
     }
 
     //TODO: correct operator in return line
@@ -82,7 +91,16 @@ public struct VectorUtil
         for(int i = 0; i < points.Length; i++)
             sum += points[i];
 
-        return sum /= points.Length;
+        return sum / points.Length;
+    }
+
+    public float3 MeanPoint(NineValues<float3> points)
+    {
+        float3 sum = float3.zero;
+        for(int i = 0; i < points.Length; i++)
+            sum += points[i];
+
+        return sum / points.Length;
     }
 
     public float2 MidPoint(float2 a, float2 b, float offset = 0.5f)

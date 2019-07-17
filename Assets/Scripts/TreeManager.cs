@@ -47,7 +47,7 @@ public class TreeManager : MonoBehaviour
             simplex = new SimplexNoise(worley.seed, 0.1f)
         };
 
-        bool one = true;
+        bool one = false;
         int range = 1;
 
         if(!one)

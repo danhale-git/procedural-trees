@@ -80,9 +80,9 @@ public struct WorleyNoise
 	public struct CellProfile
 	{
 		public CellData data;
-		public NativeArray<float3> vertices;
-		public NativeArray<CellDataX2> adjacentCells;
-		public NativeArray<float> vertexRotations;
+		public NineValues<float3> vertices;
+		public NineValues<CellDataX2> adjacentCells;
+		public NineValues<float> vertexRotations;
 
 		bool PointInSegment(float pointRotation, float segmentSelector)
 		{

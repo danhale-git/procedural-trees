@@ -78,8 +78,8 @@ public struct TreeGenerator
 
         if(smallSegmentFound)
         {
-            cell.vertices = new NativeArray<float3>(newVertices, Allocator.Temp);
-            cell.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
+            cell.vertices = new NineValues<float3>(newVertices, Allocator.Temp);
+            cell.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
         }
 
         return cell;
@@ -99,6 +99,8 @@ public struct TreeGenerator
         checkNext.Enqueue(startChild);
         alreadyChecked.Add(startChild.index);
 
+        var children = new NativeList<WorleyNoise.CellProfile>(Allocator.Temp);
+
         while(checkNext.Count > 0)
         {
             WorleyNoise.CellData childData = checkNext.Dequeue();
@@ -114,6 +116,8 @@ public struct TreeGenerator
             positionInParent.y += baseHeight;
 
             leaves.Draw(childProfile, positionInParent);
+
+            children.Add(childProfile);
 
             for(int i = 0; i < childProfile.vertices.Length; i++)
             {
