@@ -30,9 +30,9 @@ public struct WorleyCellProfile
 
         var cellProfile = new WorleyNoise.CellProfile();
         cellProfile.data = cell;
-        cellProfile.vertices = new NineValues<float3>(cellVertices, Allocator.Temp);
-        cellProfile.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(adjacentCells, Allocator.Temp);
-        cellProfile.vertexRotations = new NineValues<float>(vertexRotations, Allocator.Temp);
+        cellProfile.vertices = new NineValues<float3>(cellVertices);
+        cellProfile.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(adjacentCells);
+        cellProfile.vertexRotations = new NineValues<float>(vertexRotations);
 
         triangles.Dispose();
         cellVertices.Dispose();

@@ -5,7 +5,7 @@ public struct NineValues<T> where T : struct
     public int Length;
     public T _0, _1, _2, _3, _4, _5, _6, _7, _8;
 
-    public NineValues(NativeList<T> inputList, Allocator DEBUG)
+    public NineValues(NativeList<T> inputList)
     {
         if(inputList.Length > 9)
             throw new System.Exception("Input list for NineValues cannot be longer than 9 values");

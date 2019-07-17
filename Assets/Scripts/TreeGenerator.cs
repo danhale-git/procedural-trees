@@ -78,8 +78,8 @@ public struct TreeGenerator
 
         if(smallSegmentFound)
         {
-            cell.vertices = new NineValues<float3>(newVertices, Allocator.Temp);
-            cell.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(newAdjacentCells, Allocator.Temp);
+            cell.vertices = new NineValues<float3>(newVertices);
+            cell.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(newAdjacentCells);
         }
 
         return cell;
