@@ -11,6 +11,7 @@ public struct WorleyCellProfile
 
     NativeList<float3> cellVertices;
     NativeList<WorleyNoise.CellDataX2> adjacentCells;
+    NativeList<float> vertexRotations;
 
     public WorleyNoise.CellProfile GetCellProfile(NativeArray<WorleyNoise.CellData> nineCells, WorleyNoise.CellData cell)
     {
@@ -22,6 +23,7 @@ public struct WorleyCellProfile
 
         this.cellVertices = new NativeList<float3>(Allocator.Temp);
         this.adjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
+        this.vertexRotations = new NativeList<float>(Allocator.Temp);
         GetCellVerticesAndAdjacentCells();
 
         WorldToLocalVertexPositions();
@@ -30,6 +32,7 @@ public struct WorleyCellProfile
         cellProfile.data = cell;
         cellProfile.vertices = new NativeArray<float3>(cellVertices, Allocator.Temp);
         cellProfile.adjacentCells = new NativeArray<WorleyNoise.CellDataX2>(adjacentCells, Allocator.Temp);
+        cellProfile.vertexRotations = new NativeArray<float>(vertexRotations, Allocator.Temp);
 
         triangles.Dispose();
         cellVertices.Dispose();
@@ -94,6 +97,7 @@ public struct WorleyCellProfile
         {
             cellVertices.Add(triangle.circumcircle.center);
             adjacentCells.Add(SortCellPairClockwise(adjacentCellPair));
+            vertexRotations.Add(vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition));
         }
     }
 

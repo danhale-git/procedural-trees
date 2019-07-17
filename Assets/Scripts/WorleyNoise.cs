@@ -82,6 +82,7 @@ public struct WorleyNoise
 		public CellData data;
 		public NativeArray<float3> vertices;
 		public NativeArray<CellDataX2> adjacentCells;
+		public NativeArray<float> vertexRotations;
 	}
 
 	public CellData GetCellData(int2 cellIndex)
