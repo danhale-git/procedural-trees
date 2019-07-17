@@ -83,6 +83,18 @@ public struct WorleyNoise
 		public NativeArray<float3> vertices;
 		public NativeArray<CellDataX2> adjacentCells;
 		public NativeArray<float> vertexRotations;
+
+		bool PointInSegment(float pointRotation, float segmentSelector)
+		{
+			int segment = (int)math.round(vertexRotations.Length-1 * segmentSelector);
+
+			int nextSegment = segment == vertexRotations.Length-1 ? 0 : segment+1;
+
+			float currentRotation = vertexRotations[segment];
+			float nextRotation = vertexRotations[nextSegment];
+
+			return (pointRotation >= currentRotation && pointRotation < nextRotation);
+		}
 	}
 
 	public CellData GetCellData(int2 cellIndex)
