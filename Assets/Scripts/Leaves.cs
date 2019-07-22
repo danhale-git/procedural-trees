@@ -12,7 +12,6 @@ public struct Leaves
 
     float3 center;
     float height;
-    NativeArray<bool> alteredVertices;
 
     const int minCornerAngle = 90;
     const int minSegmentAngle = 30;
@@ -26,7 +25,6 @@ public struct Leaves
 
         this.center = float3.zero;
         this.height = 0;
-        alteredVertices = new NativeArray<bool>();
     }
 
     public void Draw(WorleyNoise.CellProfile cellProfile, float3 offset)
