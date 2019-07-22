@@ -24,11 +24,9 @@ public struct TreeGenerator
 
     float baseHeight;
 
-    const int minSegmentAngle = 30;
-
     public void Generate(int2 cellIndex)
     {
-        parentCell = RemoveSmallSegments(worley.GetCellProfile(cellIndex), minSegmentAngle);
+        parentCell = worley.GetCellProfile(cellIndex);
 
         vertices = new NativeList<float3>(Allocator.Temp);
         triangles = new NativeList<int>(Allocator.Temp);
@@ -45,44 +43,13 @@ public struct TreeGenerator
 
         trunk.DrawTrunk(parentCell);
 
+        DrawCellSegments(parentCell);
         DrawCellLines(parentCell);
 
         MakeMesh();
 
         vertices.Dispose();
         triangles.Dispose();
-    }
-
-    WorleyNoise.CellProfile RemoveSmallSegments(WorleyNoise.CellProfile cell, int minSegmentAngle)
-    {
-        var newVertices = new NativeList<float3>(Allocator.Temp);
-        var newAdjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
-
-        bool smallSegmentFound = false;
-        for(int i = 0; i < cell.vertices.Length; i++)
-        {
-            int next = i == cell.vertices.Length-1 ? 0 : i+1;
-            float3 currentVertex = cell.vertices[i];
-            float3 nextVertex = cell.vertices[next];
-
-            float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
-
-            if(segmentAngle > minSegmentAngle)
-            {
-                newVertices.Add(currentVertex);
-                newAdjacentCells.Add(cell.adjacentCells[i]);
-            }
-            else if(!smallSegmentFound)
-                smallSegmentFound = true;
-        }
-
-        if(smallSegmentFound)
-        {
-            cell.vertices = new NineValues<float3>(newVertices);
-            cell.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(newAdjacentCells);
-        }
-
-        return cell;
     }
 
     void DrawChildCells(float2 frequency)
@@ -167,6 +134,14 @@ public struct TreeGenerator
         {
             int next = i == cell.vertices.Length-1 ? 0 : i+1;
             UnityEngine.Debug.DrawLine(cell.vertices[i]+cell.data.position, cell.vertices[next]+cell.data.position, UnityEngine.Color.green, 100);
+        }
+    }
+
+    void DrawCellSegments(WorleyNoise.CellProfile cell)
+    {
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            UnityEngine.Debug.DrawLine(cell.vertices[i]+cell.data.position, cell.data.position, UnityEngine.Color.red, 100);
         }
     }
 }

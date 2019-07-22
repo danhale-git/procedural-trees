@@ -15,6 +15,7 @@ public struct Leaves
     NativeArray<bool> alteredVertices;
 
     const int minCornerAngle = 90;
+    const int minSegmentAngle = 30;
 
     public Leaves(NativeList<float3> vertices, NativeList<int> triangles)
     {
@@ -33,6 +34,7 @@ public struct Leaves
         this.offset = offset;
         this.cell = cellProfile;
 
+        RemoveSmallSegments();
         SoftenAcuteCorners();
 
         this.height = FarthestVertexDistance();
@@ -62,6 +64,35 @@ public struct Leaves
 
             DrawTriangle(currentDrop, nextEdge, currentEdge);
             DrawTriangle(currentDrop, nextDrop, nextEdge);
+        }
+    }
+
+    void RemoveSmallSegments()
+    {
+        var newVertices = new NativeList<float3>(Allocator.Temp);
+        var newAdjacentCells = new NativeList<WorleyNoise.CellDataX2>(Allocator.Temp);
+
+        bool smallSegmentFound = false;
+        for(int i = 0; i < cell.vertices.Length; i++)
+        {
+            float3 currentVertex = cell.GetVertex(i);
+            float3 nextVertex = cell.GetVertex(i+1);
+
+            float segmentAngle = vectorUtil.Angle(currentVertex, nextVertex);
+
+            if(segmentAngle > minSegmentAngle)
+            {
+                newVertices.Add(currentVertex);
+                newAdjacentCells.Add(cell.adjacentCells[i]);
+            }
+            else if(!smallSegmentFound)
+                    smallSegmentFound = true;
+        }
+
+        if(smallSegmentFound)
+        {
+            cell.vertices = new NineValues<float3>(newVertices);
+            cell.adjacentCells = new NineValues<WorleyNoise.CellDataX2>(newAdjacentCells);
         }
     }
 

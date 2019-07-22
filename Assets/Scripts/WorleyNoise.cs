@@ -95,6 +95,34 @@ public struct WorleyNoise
 
 			return (pointRotation >= currentRotation && pointRotation < nextRotation);
 		}
+
+		public CellDataX2 GetAdjacent(int index)
+		{
+			int newIndex;
+
+			if(index >= vertices.Length)
+				newIndex = index - vertices.Length;
+			else if(index < 0)
+				newIndex = index + vertices.Length;
+			else
+				newIndex = index;
+
+			return adjacentCells[newIndex];
+		}
+
+		public float3 GetVertex(int index)
+		{
+			int newIndex;
+
+			if(index >= vertices.Length)
+				newIndex = index - vertices.Length;
+			else if(index < 0)
+				newIndex = index + vertices.Length;
+			else
+				newIndex = index;
+
+			return vertices[newIndex];
+		}
 	}
 
 	public CellData GetCellData(int2 cellIndex)
