@@ -58,11 +58,11 @@ public struct BowyerWatson<T> where T : struct, IBowyerWatsonPoint
     {
         public Vertex a, b, c;
         public Circumcircle circumcircle;
-        public float degreesFromUp;
+        public float clockwiseDegrees;
 
         public int CompareTo(Triangle other)
         {
-            return degreesFromUp.CompareTo(other.degreesFromUp);
+            return clockwiseDegrees.CompareTo(other.clockwiseDegrees);
         }
 
         public Vertex this[int i]

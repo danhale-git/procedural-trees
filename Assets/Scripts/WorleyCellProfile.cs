@@ -52,7 +52,7 @@ public struct WorleyCellProfile
         for(int i = 0; i < triangles.Length; i++)
         {
             var triangle = triangles[i];
-            triangle.degreesFromUp = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
+            triangle.clockwiseDegrees = vectorUtil.RotationFromUp(triangle.circumcircle.center, cellPosition);
             triangles[i] = triangle;
         }
 
