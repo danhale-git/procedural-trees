@@ -26,14 +26,22 @@ public struct WorleyNoise
 		seed = math.abs(newSeed);
 	}
 
-	//TODO get cell position as 2d or 3d
-	public struct CellData : IComparable<CellData>, IEquatable<CellData>
+	public struct CellData : IComparable<CellData>, IEquatable<CellData>, IBowyerWatsonPoint
 	{
 		public int CompareTo(CellData other)
-		{ return value.CompareTo(other.value); }
+		{
+			return value.CompareTo(other.value);
+		}
 
 		public bool Equals(CellData other)
-		{ return this.index.Equals(other.index); }
+		{
+			return this.index.Equals(other.index);
+		}
+
+		public float3 GetBowyerWatsonPoint()
+		{
+			return position;
+		}
 
 		public float value;
 		public int2 index;
@@ -71,10 +79,50 @@ public struct WorleyNoise
 
 	public struct CellProfile
 	{
-		public CellData cell;
-		public float3 meanPoint;
-		public NativeArray<float3> vertices;
-		public NativeArray<CellDataX2> adjacentCells;
+		public CellData data;
+		public NineValues<float3> vertices;
+		public NineValues<CellDataX2> adjacentCells;
+		public NineValues<float> vertexRotations;
+
+		bool PointInSegment(float pointRotation, float segmentSelector)
+		{
+			int segment = (int)math.round(vertexRotations.Length-1 * segmentSelector);
+
+			int nextSegment = segment == vertexRotations.Length-1 ? 0 : segment+1;
+
+			float currentRotation = vertexRotations[segment];
+			float nextRotation = vertexRotations[nextSegment];
+
+			return (pointRotation >= currentRotation && pointRotation < nextRotation);
+		}
+
+		public CellDataX2 GetAdjacent(int index)
+		{
+			int newIndex;
+
+			if(index >= vertices.Length)
+				newIndex = index - vertices.Length;
+			else if(index < 0)
+				newIndex = index + vertices.Length;
+			else
+				newIndex = index;
+
+			return adjacentCells[newIndex];
+		}
+
+		public float3 GetVertex(int index)
+		{
+			int newIndex;
+
+			if(index >= vertices.Length)
+				newIndex = index - vertices.Length;
+			else if(index < 0)
+				newIndex = index + vertices.Length;
+			else
+				newIndex = index;
+
+			return vertices[newIndex];
+		}
 	}
 
 	public CellData GetCellData(int2 cellIndex)
@@ -94,24 +142,33 @@ public struct WorleyNoise
     }
 
 	public CellProfile GetCellProfile(int2 cellIndex)
+	{
+		return GetCellProfile(GetCellData(cellIndex));
+	}
+
+	public CellProfile GetCellProfile(CellData cell)
     {
-        var points = new NativeList<WorleyNoise.CellData>(Allocator.Temp);
+        var nineCells = new NativeArray<WorleyNoise.CellData>(9, Allocator.Temp);
 
-		WorleyNoise.CellData cell = new WorleyNoise.CellData();
-
+		int arrayIndex = 0;
         for(int x = -1; x < 2; x++)
             for(int z = -1; z < 2; z++)
             {
-                int2 index = new int2(x, z) + cellIndex;
-                WorleyNoise.CellData newCell = GetCellData(index);
-                points.Add(newCell);
+                int2 otherCellIndex = new int2(x, z) + cell.index;
+                CellData newCell = GetCellData(otherCellIndex);
 
-				if(index.Equals(cellIndex))
-                    cell = newCell;
+				if(x == 0 && z == 0)
+					nineCells[arrayIndex] = cell;
+				else
+                	nineCells[arrayIndex] = newCell;
+
+				arrayIndex++;
             }
 
-        CellProfile cellProfile = bowyerWatson.GetCellProfile(points, cell);
+        CellProfile cellProfile = bowyerWatson.GetCellProfile(nineCells, cell);
 
+		nineCells.Dispose();
+		
         return cellProfile;
     }
 
